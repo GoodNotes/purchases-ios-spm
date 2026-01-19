@@ -1043,6 +1043,30 @@ public protocol PurchasesSwiftType: AnyObject {
      */
     func offeringsWithSource() async throws -> (offerings: Offerings, source: OfferingsSource)
 
+    #if !ENABLE_CUSTOM_ENTITLEMENT_COMPUTATION
+
+    /**
+     * Fetch the latest available ``CustomerInfo`` for this user, returning the data source.
+     *
+     * The returned source indicates whether customer info was loaded from cache (memory or disk)
+     * or fetched from the RevenueCat backend.
+     */
+    func customerInfoWithSource() async throws -> (customerInfo: CustomerInfo, source: CustomerInfoSource)
+
+    /**
+     * Fetch the latest available ``CustomerInfo`` for this user, returning the data source.
+     *
+     * - Parameter fetchPolicy: The behavior for what to do regarding caching.
+     *
+     * The returned source indicates whether customer info was loaded from cache (memory or disk)
+     * or fetched from the RevenueCat backend.
+     */
+    func customerInfoWithSource(
+        fetchPolicy: CacheFetchPolicy
+    ) async throws -> (customerInfo: CustomerInfo, source: CustomerInfoSource)
+
+    #endif
+
     #if os(iOS) || VISION_OS
 
     /**

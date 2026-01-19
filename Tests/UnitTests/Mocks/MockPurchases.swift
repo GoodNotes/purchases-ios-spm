@@ -465,6 +465,20 @@ extension MockPurchases: PurchasesSwiftType {
         self.unimplemented()
     }
 
+    #if !ENABLE_CUSTOM_ENTITLEMENT_COMPUTATION
+
+    func customerInfoWithSource() async throws -> (customerInfo: CustomerInfo, source: CustomerInfoSource) {
+        self.unimplemented()
+    }
+
+    func customerInfoWithSource(
+        fetchPolicy: CacheFetchPolicy
+    ) async throws -> (customerInfo: CustomerInfo, source: CustomerInfoSource) {
+        self.unimplemented()
+    }
+
+    #endif
+
     func beginRefundRequest(
         forProduct productID: String,
         completion: @escaping (Result<RefundRequestStatus, PublicError>) -> Void
