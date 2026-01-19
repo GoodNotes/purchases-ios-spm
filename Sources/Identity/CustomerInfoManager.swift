@@ -18,6 +18,9 @@ import Foundation
 class CustomerInfoManager {
 
     typealias CustomerInfoCompletion = @MainActor @Sendable (Result<CustomerInfo, BackendError>) -> Void
+    typealias CustomerInfoWithSourceCompletion = @MainActor @Sendable (
+        Result<(customerInfo: CustomerInfo, source: CustomerInfoSource), BackendError>
+    ) -> Void
 
     private let offlineEntitlementsManager: OfflineEntitlementsManager
     private let operationDispatcher: OperationDispatcher
@@ -96,6 +99,22 @@ class CustomerInfoManager {
         }
     }
 
+    func fetchAndCacheCustomerInfoWithSource(appUserID: String,
+                                             isAppBackgrounded: Bool,
+                                             completion: CustomerInfoWithSourceCompletion?) {
+        guard let completion = completion else {
+            self.fetchAndCacheCustomerInfo(appUserID: appUserID,
+                                           isAppBackgrounded: isAppBackgrounded,
+                                           completion: nil)
+            return
+        }
+
+        self.fetchAndCacheCustomerInfo(appUserID: appUserID,
+                                       isAppBackgrounded: isAppBackgrounded) { result in
+            completion(result.map { (customerInfo: $0, source: .remote) })
+        }
+    }
+
     func fetchAndCacheCustomerInfoIfStale(appUserID: String,
                                           isAppBackgrounded: Bool,
                                           completion: CustomerInfoCompletion?) {
@@ -120,25 +139,59 @@ class CustomerInfoManager {
         }
     }
 
+    func fetchAndCacheCustomerInfoIfStaleWithSource(appUserID: String,
+                                                    isAppBackgrounded: Bool,
+                                                    completion: CustomerInfoWithSourceCompletion?) {
+        let isCacheStale = self.withData {
+            $0.deviceCache.isCustomerInfoCacheStale(appUserID: appUserID, isAppBackgrounded: isAppBackgrounded)
+        }
+
+        guard !isCacheStale, let customerInfo = self.cachedCustomerInfo(appUserID: appUserID) else {
+            Logger.debug(isAppBackgrounded
+                            ? Strings.customerInfo.customerinfo_stale_updating_in_background
+                            : Strings.customerInfo.customerinfo_stale_updating_in_foreground)
+            self.fetchAndCacheCustomerInfoWithSource(appUserID: appUserID,
+                                                     isAppBackgrounded: isAppBackgrounded,
+                                                     completion: completion)
+            return
+        }
+
+        if let completion = completion {
+            self.operationDispatcher.dispatchOnMainActor {
+                completion(.success((customerInfo: customerInfo, source: .cache)))
+            }
+        }
+    }
+
     // swiftlint:disable:next function_body_length
     func customerInfo(
         appUserID: String,
         fetchPolicy: CacheFetchPolicy,
         completion: CustomerInfoCompletion?
     ) {
+        self.customerInfoWithSource(appUserID: appUserID, fetchPolicy: fetchPolicy) { result in
+            completion?(result.map { $0.customerInfo })
+        }
+    }
+
+    func customerInfoWithSource(
+        appUserID: String,
+        fetchPolicy: CacheFetchPolicy,
+        completion: CustomerInfoWithSourceCompletion?
+    ) {
         switch fetchPolicy {
         case .fromCacheOnly:
             self.operationDispatcher.dispatchOnMainActor {
-                completion?(
-                    Result(self.cachedCustomerInfo(appUserID: appUserID), .missingCachedCustomerInfo())
-                )
+                let cachedResult = self.cachedCustomerInfo(appUserID: appUserID)
+                    .map { (customerInfo: $0, source: CustomerInfoSource.cache) }
+                completion?(Result(cachedResult, .missingCachedCustomerInfo()))
             }
 
         case .fetchCurrent:
             self.systemInfo.isApplicationBackgrounded { isAppBackgrounded in
-                self.fetchAndCacheCustomerInfo(appUserID: appUserID,
-                                               isAppBackgrounded: isAppBackgrounded,
-                                               completion: completion)
+                self.fetchAndCacheCustomerInfoWithSource(appUserID: appUserID,
+                                                         isAppBackgrounded: isAppBackgrounded,
+                                                         completion: completion)
             }
 
         case .cachedOrFetched:
@@ -150,7 +203,7 @@ class CustomerInfoManager {
                 if let completion = completion {
                     completionCalled = true
                     self.operationDispatcher.dispatchOnMainActor {
-                        completion(.success(infoFromCache))
+                        completion(.success((customerInfo: infoFromCache, source: .cache)))
                     }
                 }
             }
@@ -159,9 +212,9 @@ class CustomerInfoManager {
             let completionIfNotCalledAlready = completionCalled ? nil : completion
 
             self.systemInfo.isApplicationBackgrounded { isAppBackgrounded in
-                self.fetchAndCacheCustomerInfoIfStale(appUserID: appUserID,
-                                                      isAppBackgrounded: isAppBackgrounded,
-                                                      completion: completionIfNotCalledAlready)
+                self.fetchAndCacheCustomerInfoIfStaleWithSource(appUserID: appUserID,
+                                                                isAppBackgrounded: isAppBackgrounded,
+                                                                completion: completionIfNotCalledAlready)
             }
 
         case .notStaleCachedOrFetched:
@@ -176,13 +229,13 @@ class CustomerInfoManager {
                     Logger.debug(Strings.customerInfo.vending_cache)
                     if let completion = completion {
                         self.operationDispatcher.dispatchOnMainActor {
-                            completion(.success(infoFromCache))
+                            completion(.success((customerInfo: infoFromCache, source: .cache)))
                         }
                     }
                 } else {
-                    self.fetchAndCacheCustomerInfo(appUserID: appUserID,
-                                                   isAppBackgrounded: isAppBackgrounded,
-                                                   completion: completion)
+                    self.fetchAndCacheCustomerInfoWithSource(appUserID: appUserID,
+                                                             isAppBackgrounded: isAppBackgrounded,
+                                                             completion: completion)
                 }
             }
         }

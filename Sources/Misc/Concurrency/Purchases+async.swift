@@ -152,6 +152,19 @@ extension Purchases {
         }
     }
 
+    func customerInfoWithSourceAsync(
+        fetchPolicy: CacheFetchPolicy
+    ) async throws -> (customerInfo: CustomerInfo, source: CustomerInfoSource) {
+        return try await withUnsafeThrowingContinuation { continuation in
+            getCustomerInfoWithSource(fetchPolicy: fetchPolicy) { customerInfo, source, error in
+                let resultValue = customerInfo.flatMap { customerInfo in
+                    source.map { (customerInfo: customerInfo, source: $0) }
+                }
+                continuation.resume(with: Result(resultValue, error))
+            }
+        }
+    }
+
     func checkTrialOrIntroductoryDiscountEligibilityAsync(_ product: StoreProduct) async
     -> IntroEligibilityStatus {
         return await withUnsafeContinuation { continuation in

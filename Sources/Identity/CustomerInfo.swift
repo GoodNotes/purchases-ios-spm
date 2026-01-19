@@ -258,6 +258,17 @@ public typealias ProductIdentifier = String
     private let purchaseDatesByProductId: [String: Date?]
 }
 
+/// Indicates where ``CustomerInfo`` was loaded from.
+public enum CustomerInfoSource: Int {
+
+    /// Customer info was loaded from cache (memory or disk).
+    case cache
+
+    /// Customer info was fetched from the RevenueCat backend.
+    case remote
+
+}
+
 // MARK: - Internal
 
 extension CustomerInfo {

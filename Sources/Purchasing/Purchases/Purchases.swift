@@ -988,12 +988,32 @@ public extension Purchases {
         }
     }
 
+    internal func getCustomerInfoWithSource(
+        fetchPolicy: CacheFetchPolicy,
+        completion: @escaping (CustomerInfo?, CustomerInfoSource?, PublicError?) -> Void
+    ) {
+        self.customerInfoManager.customerInfoWithSource(appUserID: self.appUserID,
+                                                        fetchPolicy: fetchPolicy) { @Sendable result in
+            completion(result.value?.customerInfo, result.value?.source, result.error?.asPublicError)
+        }
+    }
+
     func customerInfo() async throws -> CustomerInfo {
         return try await self.customerInfo(fetchPolicy: .default)
     }
 
     func customerInfo(fetchPolicy: CacheFetchPolicy) async throws -> CustomerInfo {
         return try await self.customerInfoAsync(fetchPolicy: fetchPolicy)
+    }
+
+    func customerInfoWithSource() async throws -> (customerInfo: CustomerInfo, source: CustomerInfoSource) {
+        return try await self.customerInfoWithSource(fetchPolicy: .default)
+    }
+
+    func customerInfoWithSource(
+        fetchPolicy: CacheFetchPolicy
+    ) async throws -> (customerInfo: CustomerInfo, source: CustomerInfoSource) {
+        return try await self.customerInfoWithSourceAsync(fetchPolicy: fetchPolicy)
     }
 
     var cachedCustomerInfo: CustomerInfo? {
