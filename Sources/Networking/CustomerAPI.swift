@@ -93,6 +93,8 @@ final class CustomerAPI {
               transactionData: PurchasedTransactionData,
               observerMode: Bool,
               appTransaction: String?,
+              transactions: [String]? = nil,
+              renewalInfo: [String]? = nil,
               completion: @escaping CustomerAPI.CustomerInfoResponseHandler) {
         var subscriberAttributesToPost: SubscriberAttribute.Dictionary?
 
@@ -114,7 +116,9 @@ final class CustomerAPI {
             receipt: receipt,
             observerMode: observerMode,
             testReceiptIdentifier: self.backendConfig.systemInfo.testReceiptIdentifier,
-            appTransaction: appTransaction
+            appTransaction: appTransaction,
+            transactions: transactions,
+            renewalInfo: renewalInfo
         )
         let factory = PostReceiptDataOperation.createFactory(
             configuration: config,

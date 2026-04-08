@@ -142,6 +142,11 @@ extension PostReceiptDataOperation {
         /// retrieved from StoreKit 2.
         let appTransaction: String?
         let metadata: [String: String]?
+
+        /// All signed StoreKit 2 transaction JWS tokens.
+        let transactions: [String]?
+        /// All signed StoreKit 2 renewal info JWS tokens.
+        let renewalInfo: [String]?
     }
 
     struct Paywall {
@@ -171,7 +176,9 @@ extension PostReceiptDataOperation.PostData {
         receipt: EncodedAppleReceipt,
         observerMode: Bool,
         testReceiptIdentifier: String?,
-        appTransaction: String?
+        appTransaction: String?,
+        transactions: [String]? = nil,
+        renewalInfo: [String]? = nil
     ) {
         self.init(
             appUserID: data.appUserID,
@@ -190,7 +197,9 @@ extension PostReceiptDataOperation.PostData {
             aadAttributionToken: data.aadAttributionToken,
             testReceiptIdentifier: testReceiptIdentifier,
             appTransaction: appTransaction,
-            metadata: data.metadata
+            metadata: data.metadata,
+            transactions: transactions,
+            renewalInfo: renewalInfo
         )
     }
 
@@ -274,6 +283,8 @@ extension PostReceiptDataOperation.PostData: Encodable {
         case testReceiptIdentifier = "test_receipt_identifier"
         case appTransaction = "app_transaction"
         case metadata
+        case transactions
+        case renewalInfo = "renewal_info"
 
     }
 
@@ -306,6 +317,8 @@ extension PostReceiptDataOperation.PostData: Encodable {
 
         try container.encodeIfPresent(self.aadAttributionToken, forKey: .aadAttributionToken)
         try container.encodeIfPresent(self.testReceiptIdentifier, forKey: .testReceiptIdentifier)
+        try container.encodeIfPresent(self.transactions, forKey: .transactions)
+        try container.encodeIfPresent(self.renewalInfo, forKey: .renewalInfo)
     }
 
     var fetchToken: String? { return self.receipt.serialized() }

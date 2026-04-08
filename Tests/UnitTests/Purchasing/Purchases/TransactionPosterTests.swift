@@ -129,6 +129,35 @@ class TransactionPosterTests: TestCase {
         expect(self.mockTransaction.finishInvoked) == true
     }
 
+    func testHandlePurchasedTransactionSendsAllTransactionsAndRenewalInfo() throws {
+        try AvailabilityChecks.iOS16APIAvailableOrSkipTest()
+
+        self.setUp(observerMode: false, storeKitVersion: .storeKit2)
+        let jwsRepresentation = UUID().uuidString
+        self.mockTransaction = MockStoreTransaction(jwsRepresentation: jwsRepresentation)
+
+        let allTransactions = ["tx-jws-1", "tx-jws-2"]
+        let renewalInfo = ["renewal-jws-1"]
+        self.transactionFetcher.stubbedAllTransactionJWS = allTransactions
+        self.transactionFetcher.stubbedRenewalInfoJWS = renewalInfo
+
+        let product = MockSK1Product(mockProductIdentifier: "product")
+        let transactionData = PurchasedTransactionData(
+            appUserID: "user",
+            source: .init(isRestore: false, initiationSource: .purchase)
+        )
+
+        self.receiptFetcher.shouldReturnReceipt = false
+        self.productsManager.stubbedProductsCompletionResult = .success([StoreProduct(sk1Product: product)])
+        self.backend.stubbedPostReceiptResult = .success(Self.mockCustomerInfo)
+
+        let result = try self.handleTransaction(transactionData)
+        expect(result).to(beSuccess())
+
+        expect(self.backend.invokedPostReceiptDataParameters?.transactions) == allTransactions
+        expect(self.backend.invokedPostReceiptDataParameters?.renewalInfo) == renewalInfo
+    }
+
     func testHandlePurchasedTransactionSendsSK2Receipt() throws {
         try AvailabilityChecks.iOS16APIAvailableOrSkipTest()
 

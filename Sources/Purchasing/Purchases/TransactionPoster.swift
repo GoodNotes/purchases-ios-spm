@@ -107,12 +107,23 @@ final class TransactionPoster: TransactionPosterType {
             switch result {
             case .success(let encodedReceipt):
                 self.product(with: productIdentifier) { product in
-                    self.transactionFetcher.appTransactionJWS { appTransaction in
+                    _ = Task<Void, Never> {
+                        let appTransaction = await self.transactionFetcher.appTransactionJWS
+                        var transactions: [String]? = nil
+                        var renewalInfo: [String]? = nil
+                        if #available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *) {
+                            async let txs = self.transactionFetcher.allTransactionJWS
+                            async let renewal = self.transactionFetcher.renewalInfoJWS
+                            transactions = await txs
+                            renewalInfo = await renewal
+                        }
                         self.postReceipt(transaction: transaction,
                                          purchasedTransactionData: data,
                                          receipt: encodedReceipt,
                                          product: product,
                                          appTransaction: appTransaction,
+                                         transactions: transactions,
+                                         renewalInfo: renewalInfo,
                                          completion: completion)
                     }
                 }
@@ -241,6 +252,8 @@ private extension TransactionPoster {
                      receipt: EncodedAppleReceipt,
                      product: StoreProduct?,
                      appTransaction: String?,
+                     transactions: [String]?,
+                     renewalInfo: [String]?,
                      completion: @escaping CustomerAPI.CustomerInfoResponseHandler) {
         let productData = product.map { ProductRequestData(with: $0, storefront: purchasedTransactionData.storefront) }
 
@@ -248,7 +261,9 @@ private extension TransactionPoster {
                           productData: productData,
                           transactionData: purchasedTransactionData,
                           observerMode: self.observerMode,
-                          appTransaction: appTransaction) { result in
+                          appTransaction: appTransaction,
+                          transactions: transactions,
+                          renewalInfo: renewalInfo) { result in
             self.handleReceiptPost(withTransaction: transaction,
                                    result: result.map { ($0, product) },
                                    subscriberAttributes: purchasedTransactionData.unsyncedAttributes,

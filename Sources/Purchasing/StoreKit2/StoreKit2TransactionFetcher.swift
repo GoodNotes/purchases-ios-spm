@@ -34,6 +34,12 @@ protocol StoreKit2TransactionFetcherType: Sendable {
     var appTransactionJWS: String? { get async }
 
     func appTransactionJWS(_ completionHandler: @escaping (String?) -> Void)
+    
+    @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
+    var allTransactionJWS: [String] { get async }
+
+    @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
+    var renewalInfoJWS: [String] { get async }
 
 }
 
@@ -103,7 +109,25 @@ final class StoreKit2TransactionFetcher: StoreKit2TransactionFetcherType {
         )
     }
 
-    /// A computed property that retrieves the JWS (JSON Web Signature) representation 
+    @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
+    var allTransactionJWS: [String] {
+        get async {
+            return await StoreKit.Transaction.all
+                .compactMap { $0.verifiedStoreTransaction }
+                .compactMap(\.jwsRepresentation)
+                .extractValues()
+        }
+    }
+
+    @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
+    var renewalInfoJWS: [String] {
+        get async {
+            let statuses = await subscriptionStatusBySubscriptionGroupId
+            return statuses.values.flatMap { $0 }.map { $0.renewalInfo.jwsRepresentation }
+        }
+    }
+
+    /// A computed property that retrieves the JWS (JSON Web Signature) representation
     /// of the app transaction asynchronously.
     ///
     /// If the OS does not support AppTransaction (available in iOS16+), it returns `nil`.
