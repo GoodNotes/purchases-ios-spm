@@ -112,10 +112,11 @@ final class TransactionPoster: TransactionPosterType {
                         var transactions: [String]? = nil
                         var renewalInfo: [String]? = nil
                         if #available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *) {
-                            async let txs = self.transactionFetcher.allTransactionJWS
-                            async let renewal = self.transactionFetcher.renewalInfoJWS
-                            transactions = await txs
-                            renewalInfo = await renewal
+                            let receipt = await self.transactionFetcher.fetchReceipt(containing: transaction)
+                            transactions = receipt.transactions
+                            renewalInfo = receipt.subscriptionStatusBySubscriptionGroupId.values
+                                .flatMap { $0 }
+                                .map { $0.renewalInfoJWSToken }
                         }
                         self.postReceipt(transaction: transaction,
                                          purchasedTransactionData: data,

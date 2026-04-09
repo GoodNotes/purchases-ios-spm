@@ -137,9 +137,17 @@ class TransactionPosterTests: TestCase {
         self.mockTransaction = MockStoreTransaction(jwsRepresentation: jwsRepresentation)
 
         let allTransactions = ["tx-jws-1", "tx-jws-2"]
-        let renewalInfo = ["renewal-jws-1"]
-        self.transactionFetcher.stubbedAllTransactionJWS = allTransactions
-        self.transactionFetcher.stubbedRenewalInfoJWS = renewalInfo
+        let renewalJWS = "renewal-jws-1"
+        self.transactionFetcher.stubbedReceipt = StoreKit2Receipt(
+            environment: .production,
+            subscriptionStatusBySubscriptionGroupId: [
+                "group1": [.init(state: .subscribed, renewalInfoJWSToken: renewalJWS, transactionJWSToken: "tx-jws-1")]
+            ],
+            transactions: allTransactions,
+            bundleId: "com.example.app",
+            originalApplicationVersion: nil,
+            originalPurchaseDate: nil
+        )
 
         let product = MockSK1Product(mockProductIdentifier: "product")
         let transactionData = PurchasedTransactionData(
@@ -155,7 +163,7 @@ class TransactionPosterTests: TestCase {
         expect(result).to(beSuccess())
 
         expect(self.backend.invokedPostReceiptDataParameters?.transactions) == allTransactions
-        expect(self.backend.invokedPostReceiptDataParameters?.renewalInfo) == renewalInfo
+        expect(self.backend.invokedPostReceiptDataParameters?.renewalInfo) == [renewalJWS]
     }
 
     func testHandlePurchasedTransactionSendsSK2Receipt() throws {

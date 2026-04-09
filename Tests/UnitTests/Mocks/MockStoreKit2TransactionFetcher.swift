@@ -22,9 +22,6 @@ final class MockStoreKit2TransactionFetcher: StoreKit2TransactionFetcherType {
     private let _stubbedHasPendingConsumablePurchase: Atomic<Bool> = false
     private let _stubbedReceipt: Atomic<StoreKit2Receipt?> = .init(nil)
     private let _stubbedAppTransactionJWS: Atomic<String?> = .init(nil)
-    private let _stubbedAllTransactionJWS: Atomic<[String]> = .init([])
-    private let _stubbedRenewalInfoJWS: Atomic<[String]> = .init([])
-
     var stubbedUnfinishedTransactions: [StoreTransaction] {
         get { return self._stubbedUnfinishedTransactions.value }
         set { self._stubbedUnfinishedTransactions.value = newValue }
@@ -50,16 +47,6 @@ final class MockStoreKit2TransactionFetcher: StoreKit2TransactionFetcherType {
         set { self._stubbedAppTransactionJWS.value = newValue }
     }
 
-    var stubbedAllTransactionJWS: [String] {
-        get { return self._stubbedAllTransactionJWS.value }
-        set { self._stubbedAllTransactionJWS.value = newValue }
-    }
-
-    var stubbedRenewalInfoJWS: [String] {
-        get { return self._stubbedRenewalInfoJWS.value }
-        set { self._stubbedRenewalInfoJWS.value = newValue }
-    }
-
     @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
     var unfinishedVerifiedTransactions: [StoreTransaction] {
         get async {
@@ -69,7 +56,14 @@ final class MockStoreKit2TransactionFetcher: StoreKit2TransactionFetcherType {
 
     @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
     func fetchReceipt(containing transaction: StoreTransactionType) async -> StoreKit2Receipt {
-        return self.stubbedReceipt!
+        return self.stubbedReceipt ?? StoreKit2Receipt(
+            environment: .production,
+            subscriptionStatusBySubscriptionGroupId: [:],
+            transactions: [],
+            bundleId: "",
+            originalApplicationVersion: nil,
+            originalPurchaseDate: nil
+        )
     }
 
     @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
@@ -94,16 +88,6 @@ final class MockStoreKit2TransactionFetcher: StoreKit2TransactionFetcherType {
 
     func appTransactionJWS(_ completion: @escaping (String?) -> Void) {
         completion(self.stubbedAppTransactionJWS)
-    }
-
-    @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
-    var allTransactionJWS: [String] {
-        get async { self.stubbedAllTransactionJWS }
-    }
-
-    @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
-    var renewalInfoJWS: [String] {
-        get async { self.stubbedRenewalInfoJWS }
     }
 
     // MARK: -
