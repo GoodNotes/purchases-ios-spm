@@ -50,7 +50,7 @@ class DisabledSignatureVerificationIntegrationTests: BaseSignatureVerificationIn
 class InformationalSignatureVerificationIntegrationTests: BaseSignatureVerificationIntegrationTests {
 
     override class var responseVerificationMode: Signing.ResponseVerificationMode {
-        return .informational(Signing.loadPublicKey())
+        return .informational(Signing.loadPublicKey(), Signing.loadCustomPublicKey())
     }
 
     func testCustomerInfoWithValidSignature() async throws {
@@ -172,7 +172,7 @@ class InformationalSignatureVerificationIntegrationTests: BaseSignatureVerificat
 class EnforcedSignatureVerificationIntegrationTests: BaseSignatureVerificationIntegrationTests {
 
     override class var responseVerificationMode: Signing.ResponseVerificationMode {
-        return .enforced(Signing.loadPublicKey())
+        return .enforced(Signing.loadPublicKey(), Signing.loadCustomPublicKey())
     }
 
     func testCustomerInfoWithValidSignature() async throws {

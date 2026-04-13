@@ -132,7 +132,7 @@ class TransactionPosterTests: TestCase {
     func testHandlePurchasedTransactionSendsAllTransactionsAndRenewalInfo() throws {
         try AvailabilityChecks.iOS16APIAvailableOrSkipTest()
 
-        self.setUp(observerMode: false, storeKitVersion: .storeKit2)
+        self.setUp(observerMode: false, storeKitVersion: .storeKit2, sk2AdditionalTransactionDataEnabled: true)
         let jwsRepresentation = UUID().uuidString
         self.mockTransaction = MockStoreTransaction(jwsRepresentation: jwsRepresentation)
 
@@ -393,9 +393,13 @@ class TransactionPosterTests: TestCase {
 
 private extension TransactionPosterTests {
 
-    func setUp(observerMode: Bool, storeKitVersion: StoreKitVersion = .default) {
+    func setUp(observerMode: Bool,
+               storeKitVersion: StoreKitVersion = .default,
+               sk2AdditionalTransactionDataEnabled: Bool = false) {
         self.operationDispatcher = .init()
-        self.systemInfo = .init(finishTransactions: !observerMode, storeKitVersion: storeKitVersion)
+        self.systemInfo = .init(finishTransactions: !observerMode,
+                                storeKitVersion: storeKitVersion,
+                                sk2AdditionalTransactionDataEnabled: sk2AdditionalTransactionDataEnabled)
         self.productsManager = .init(diagnosticsTracker: nil, systemInfo: self.systemInfo, requestTimeout: 0)
         self.receiptFetcher = .init(requestFetcher: .init(operationDispatcher: self.operationDispatcher),
                                     systemInfo: self.systemInfo)

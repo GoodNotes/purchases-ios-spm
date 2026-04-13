@@ -60,7 +60,7 @@ class BaseBackendIntegrationTests: TestCase {
     class var storeKitVersion: StoreKitVersion { return .default }
     class var observerMode: Bool { return false }
     class var responseVerificationMode: Signing.ResponseVerificationMode {
-        return .enforced(Signing.loadPublicKey())
+        return .enforced(Signing.loadPublicKey(), Signing.loadCustomPublicKey())
     }
     var enableReceiptFetchRetry: Bool = true
 
@@ -242,6 +242,7 @@ extension BaseBackendIntegrationTests: InternalDangerousSettingsType {
     var forceSignatureFailures: Bool { return false }
     var disableHeaderSignatureVerification: Bool { return false }
     var testReceiptIdentifier: String? { return self.testUUID.uuidString }
+    var sk2AdditionalTransactionDataEnabled: Bool { return false }
 
     final func serverDown() { self.serverIsDown = true }
     final func serverUp() { self.serverIsDown = false }

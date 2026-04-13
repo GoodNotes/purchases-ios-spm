@@ -16,6 +16,7 @@ import Foundation
     internal struct Internal: InternalDangerousSettingsType {
 
         let enableReceiptFetchRetry: Bool
+        let sk2AdditionalTransactionDataEnabled: Bool
 
         #if DEBUG
         let forceServerErrors: Bool
@@ -25,12 +26,14 @@ import Foundation
 
         init(
             enableReceiptFetchRetry: Bool = false,
+            sk2AdditionalTransactionDataEnabled: Bool = false,
             forceServerErrors: Bool = false,
             forceSignatureFailures: Bool = false,
             disableHeaderSignatureVerification: Bool = false,
             testReceiptIdentifier: String? = nil
         ) {
             self.enableReceiptFetchRetry = enableReceiptFetchRetry
+            self.sk2AdditionalTransactionDataEnabled = sk2AdditionalTransactionDataEnabled
             self.forceServerErrors = forceServerErrors
             self.forceSignatureFailures = forceSignatureFailures
             self.disableHeaderSignatureVerification = disableHeaderSignatureVerification
@@ -38,9 +41,11 @@ import Foundation
         }
         #else
         init(
-            enableReceiptFetchRetry: Bool = false
+            enableReceiptFetchRetry: Bool = false,
+            sk2AdditionalTransactionDataEnabled: Bool = false
         ) {
             self.enableReceiptFetchRetry = enableReceiptFetchRetry
+            self.sk2AdditionalTransactionDataEnabled = sk2AdditionalTransactionDataEnabled
         }
 
         #endif
@@ -137,6 +142,10 @@ internal protocol InternalDangerousSettingsType: Sendable {
 
     /// Whether `ReceiptFetcher` can retry fetching receipts.
     var enableReceiptFetchRetry: Bool { get }
+
+    /// Whether to include SK2 `transactions` and `renewal_info` in the `/v1/receipts` request body
+    /// and signature hash. Disabled by default; enable once the backend is ready to consume these fields.
+    var sk2AdditionalTransactionDataEnabled: Bool { get }
 
     #if DEBUG
     /// Whether `HTTPClient` will fake server errors

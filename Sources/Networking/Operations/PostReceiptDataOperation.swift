@@ -355,11 +355,18 @@ extension PostReceiptDataOperation.AppliedTargetingRule: Codable {
 extension PostReceiptDataOperation.PostData: HTTPRequestBody {
 
     var contentForSignature: [(key: String, value: String?)] {
-        return [
+        var fields: [(key: String, value: String?)] = [
             (Self.CodingKeys.appUserID.stringValue, self.appUserID),
             (Self.CodingKeys.fetchToken.stringValue, self.fetchToken),
             (Self.CodingKeys.appTransaction.stringValue, self.appTransaction)
         ]
+        if self.transactions != nil || self.renewalInfo != nil {
+            fields.append((Self.CodingKeys.transactions.stringValue,
+                           self.transactions.map { $0.joined(separator: ",") }))
+            fields.append((Self.CodingKeys.renewalInfo.stringValue,
+                           self.renewalInfo.map { $0.joined(separator: ",") }))
+        }
+        return fields
     }
 
 }
