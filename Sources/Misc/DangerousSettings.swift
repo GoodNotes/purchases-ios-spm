@@ -83,6 +83,10 @@ import Foundation
      */
     @objc public let customEntitlementComputation: Bool
 
+    /// When `true`, SK2 `transactions` and `renewal_info` are included in the `/v1/receipts`
+    /// request body and signature hash. Defaults to `false`.
+    public let sk2AdditionalTransactionDataEnabled: Bool
+
     internal let internalSettings: InternalDangerousSettingsType
 
     @objc public override convenience init() {
@@ -122,6 +126,13 @@ import Foundation
         self.init(autoSyncPurchases: false, internalSettings: Internal.default, uiPreviewMode: uiPreviewMode)
     }
 
+    /// Creates a `DangerousSettings` controlling whether SK2 additional transaction data
+    /// (`transactions` and `renewal_info`) is included in the `/v1/receipts` request.
+    public convenience init(sk2AdditionalTransactionDataEnabled: Bool) {
+        self.init(autoSyncPurchases: true,
+                  internalSettings: Internal(sk2AdditionalTransactionDataEnabled: sk2AdditionalTransactionDataEnabled))
+    }
+
     /// Designated initializer
     internal init(autoSyncPurchases: Bool,
                   customEntitlementComputation: Bool = false,
@@ -131,6 +142,7 @@ import Foundation
         self.internalSettings = internalSettings
         self.customEntitlementComputation = customEntitlementComputation
         self.uiPreviewMode = uiPreviewMode
+        self.sk2AdditionalTransactionDataEnabled = internalSettings.sk2AdditionalTransactionDataEnabled
     }
 
 }
