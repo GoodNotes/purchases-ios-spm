@@ -157,6 +157,93 @@ class BackendPostReceiptDataTests: BaseBackendPostReceiptDataTests {
         expect(self.httpClient.calls).to(haveCount(1))
     }
 
+    func testPostsReceiptDataWithTransactionsAndRenewalInfoCorrectly() throws {
+        try AvailabilityChecks.iOS16APIAvailableOrSkipTest()
+
+        let path: HTTPRequest.Path = .postReceiptData
+
+        httpClient.mock(
+            requestPath: path,
+            response: .init(statusCode: .success, response: Self.validCustomerResponse)
+        )
+
+        let transactions = ["tx-jws-1", "tx-jws-2"]
+        let renewalInfo = ["renewal-jws-1"]
+
+        waitUntil { completed in
+            self.backend.post(receipt: Self.receipt,
+                              productData: nil,
+                              transactionData: .init(
+                                 appUserID: Self.userID,
+                                 presentedOfferingContext: nil,
+                                 unsyncedAttributes: nil,
+                                 storefront: nil,
+                                 source: .init(isRestore: false, initiationSource: .purchase)
+                              ),
+                              observerMode: false,
+                              appTransaction: nil,
+                              transactions: transactions,
+                              renewalInfo: renewalInfo,
+                              completion: { _ in
+                completed()
+            })
+        }
+
+        expect(self.httpClient.calls).to(haveCount(1))
+    }
+
+    func testPostReceiptDataEncodesTransactionsAndRenewalInfoInBody() throws {
+        let postData = PostReceiptDataOperation.PostData(
+            transactionData: .init(
+                appUserID: "user",
+                presentedOfferingContext: nil,
+                unsyncedAttributes: nil,
+                storefront: nil,
+                source: .init(isRestore: false, initiationSource: .purchase)
+            ),
+            productData: nil,
+            receipt: Self.receipt,
+            observerMode: false,
+            testReceiptIdentifier: nil,
+            appTransaction: nil,
+            transactions: ["tx-jws-1", "tx-jws-2"],
+            renewalInfo: ["renewal-jws-1"]
+        )
+
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(postData)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        expect(json["transactions"] as? [String]) == ["tx-jws-1", "tx-jws-2"]
+        expect(json["renewal_info"] as? [String]) == ["renewal-jws-1"]
+    }
+
+    func testPostReceiptDataOmitsTransactionsAndRenewalInfoWhenNil() throws {
+        let postData = PostReceiptDataOperation.PostData(
+            transactionData: .init(
+                appUserID: "user",
+                presentedOfferingContext: nil,
+                unsyncedAttributes: nil,
+                storefront: nil,
+                source: .init(isRestore: false, initiationSource: .purchase)
+            ),
+            productData: nil,
+            receipt: Self.receipt,
+            observerMode: false,
+            testReceiptIdentifier: nil,
+            appTransaction: nil,
+            transactions: nil,
+            renewalInfo: nil
+        )
+
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(postData)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        expect(json["transactions"]).to(beNil())
+        expect(json["renewal_info"]).to(beNil())
+    }
+
     func testPostsReceiptDataWithTestReceiptIdentifier() throws {
         let identifier = try XCTUnwrap(UUID(uuidString: "12345678-1234-1234-1234-C2C35AE34D09")).uuidString
 

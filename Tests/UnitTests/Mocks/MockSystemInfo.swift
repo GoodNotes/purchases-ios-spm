@@ -36,6 +36,25 @@ class MockSystemInfo: SystemInfo {
                   clock: clock)
     }
 
+    convenience init(finishTransactions: Bool,
+                     storeKitVersion: StoreKitVersion = .default,
+                     sk2AdditionalTransactionDataEnabled: Bool,
+                     clock: ClockType = TestClock()) {
+        let internalSettings = DangerousSettings.Internal(
+            sk2AdditionalTransactionDataEnabled: sk2AdditionalTransactionDataEnabled
+        )
+        let dangerousSettings = DangerousSettings(
+            autoSyncPurchases: true,
+            customEntitlementComputation: false,
+            internalSettings: internalSettings
+        )
+        self.init(platformInfo: nil,
+                  finishTransactions: finishTransactions,
+                  storeKitVersion: storeKitVersion,
+                  dangerousSettings: dangerousSettings,
+                  clock: clock)
+    }
+
     override func isApplicationBackgrounded(completion: @escaping (Bool) -> Void) {
         completion(stubbedIsApplicationBackgrounded ?? false)
     }

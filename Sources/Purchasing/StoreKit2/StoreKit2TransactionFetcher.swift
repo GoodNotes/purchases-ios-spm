@@ -103,7 +103,7 @@ final class StoreKit2TransactionFetcher: StoreKit2TransactionFetcherType {
         )
     }
 
-    /// A computed property that retrieves the JWS (JSON Web Signature) representation 
+    /// A computed property that retrieves the JWS (JSON Web Signature) representation
     /// of the app transaction asynchronously.
     ///
     /// If the OS does not support AppTransaction (available in iOS16+), it returns `nil`.

@@ -129,6 +129,43 @@ class TransactionPosterTests: TestCase {
         expect(self.mockTransaction.finishInvoked) == true
     }
 
+    func testHandlePurchasedTransactionSendsAllTransactionsAndRenewalInfo() throws {
+        try AvailabilityChecks.iOS16APIAvailableOrSkipTest()
+
+        self.setUp(observerMode: false, storeKitVersion: .storeKit2, sk2AdditionalTransactionDataEnabled: true)
+        let jwsRepresentation = UUID().uuidString
+        self.mockTransaction = MockStoreTransaction(jwsRepresentation: jwsRepresentation)
+
+        let allTransactions = ["tx-jws-1", "tx-jws-2"]
+        let renewalJWS = "renewal-jws-1"
+        self.transactionFetcher.stubbedReceipt = StoreKit2Receipt(
+            environment: .production,
+            subscriptionStatusBySubscriptionGroupId: [
+                "group1": [.init(state: .subscribed, renewalInfoJWSToken: renewalJWS, transactionJWSToken: "tx-jws-1")]
+            ],
+            transactions: allTransactions,
+            bundleId: "com.example.app",
+            originalApplicationVersion: nil,
+            originalPurchaseDate: nil
+        )
+
+        let product = MockSK1Product(mockProductIdentifier: "product")
+        let transactionData = PurchasedTransactionData(
+            appUserID: "user",
+            source: .init(isRestore: false, initiationSource: .purchase)
+        )
+
+        self.receiptFetcher.shouldReturnReceipt = false
+        self.productsManager.stubbedProductsCompletionResult = .success([StoreProduct(sk1Product: product)])
+        self.backend.stubbedPostReceiptResult = .success(Self.mockCustomerInfo)
+
+        let result = try self.handleTransaction(transactionData)
+        expect(result).to(beSuccess())
+
+        expect(self.backend.invokedPostReceiptDataParameters?.transactions) == allTransactions
+        expect(self.backend.invokedPostReceiptDataParameters?.renewalInfo) == [renewalJWS]
+    }
+
     func testHandlePurchasedTransactionSendsSK2Receipt() throws {
         try AvailabilityChecks.iOS16APIAvailableOrSkipTest()
 
@@ -356,9 +393,13 @@ class TransactionPosterTests: TestCase {
 
 private extension TransactionPosterTests {
 
-    func setUp(observerMode: Bool, storeKitVersion: StoreKitVersion = .default) {
+    func setUp(observerMode: Bool,
+               storeKitVersion: StoreKitVersion = .default,
+               sk2AdditionalTransactionDataEnabled: Bool = false) {
         self.operationDispatcher = .init()
-        self.systemInfo = .init(finishTransactions: !observerMode, storeKitVersion: storeKitVersion)
+        self.systemInfo = .init(finishTransactions: !observerMode,
+                                storeKitVersion: storeKitVersion,
+                                sk2AdditionalTransactionDataEnabled: sk2AdditionalTransactionDataEnabled)
         self.productsManager = .init(diagnosticsTracker: nil, systemInfo: self.systemInfo, requestTimeout: 0)
         self.receiptFetcher = .init(requestFetcher: .init(operationDispatcher: self.operationDispatcher),
                                     systemInfo: self.systemInfo)

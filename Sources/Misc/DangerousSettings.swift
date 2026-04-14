@@ -16,6 +16,7 @@ import Foundation
     internal struct Internal: InternalDangerousSettingsType {
 
         let enableReceiptFetchRetry: Bool
+        let sk2AdditionalTransactionDataEnabled: Bool
 
         #if DEBUG
         let forceServerErrors: Bool
@@ -25,12 +26,14 @@ import Foundation
 
         init(
             enableReceiptFetchRetry: Bool = false,
+            sk2AdditionalTransactionDataEnabled: Bool = false,
             forceServerErrors: Bool = false,
             forceSignatureFailures: Bool = false,
             disableHeaderSignatureVerification: Bool = false,
             testReceiptIdentifier: String? = nil
         ) {
             self.enableReceiptFetchRetry = enableReceiptFetchRetry
+            self.sk2AdditionalTransactionDataEnabled = sk2AdditionalTransactionDataEnabled
             self.forceServerErrors = forceServerErrors
             self.forceSignatureFailures = forceSignatureFailures
             self.disableHeaderSignatureVerification = disableHeaderSignatureVerification
@@ -38,9 +41,11 @@ import Foundation
         }
         #else
         init(
-            enableReceiptFetchRetry: Bool = false
+            enableReceiptFetchRetry: Bool = false,
+            sk2AdditionalTransactionDataEnabled: Bool = false
         ) {
             self.enableReceiptFetchRetry = enableReceiptFetchRetry
+            self.sk2AdditionalTransactionDataEnabled = sk2AdditionalTransactionDataEnabled
         }
 
         #endif
@@ -77,6 +82,10 @@ import Foundation
      * granting, separate from RevenueCat.
      */
     @objc public let customEntitlementComputation: Bool
+
+    /// When `true`, SK2 `transactions` and `renewal_info` are included in the `/v1/receipts`
+    /// request body and signature hash. Defaults to `false`.
+    public let sk2AdditionalTransactionDataEnabled: Bool
 
     internal let internalSettings: InternalDangerousSettingsType
 
@@ -117,6 +126,13 @@ import Foundation
         self.init(autoSyncPurchases: false, internalSettings: Internal.default, uiPreviewMode: uiPreviewMode)
     }
 
+    /// Creates a `DangerousSettings` controlling whether SK2 additional transaction data
+    /// (`transactions` and `renewal_info`) is included in the `/v1/receipts` request.
+    public convenience init(sk2AdditionalTransactionDataEnabled: Bool) {
+        self.init(autoSyncPurchases: true,
+                  internalSettings: Internal(sk2AdditionalTransactionDataEnabled: sk2AdditionalTransactionDataEnabled))
+    }
+
     /// Designated initializer
     internal init(autoSyncPurchases: Bool,
                   customEntitlementComputation: Bool = false,
@@ -126,6 +142,7 @@ import Foundation
         self.internalSettings = internalSettings
         self.customEntitlementComputation = customEntitlementComputation
         self.uiPreviewMode = uiPreviewMode
+        self.sk2AdditionalTransactionDataEnabled = internalSettings.sk2AdditionalTransactionDataEnabled
     }
 
 }
@@ -137,6 +154,10 @@ internal protocol InternalDangerousSettingsType: Sendable {
 
     /// Whether `ReceiptFetcher` can retry fetching receipts.
     var enableReceiptFetchRetry: Bool { get }
+
+    /// Whether to include SK2 `transactions` and `renewal_info` in the `/v1/receipts` request body
+    /// and signature hash. Disabled by default; enable once the backend is ready to consume these fields.
+    var sk2AdditionalTransactionDataEnabled: Bool { get }
 
     #if DEBUG
     /// Whether `HTTPClient` will fake server errors
