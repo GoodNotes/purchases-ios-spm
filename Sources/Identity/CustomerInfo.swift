@@ -249,7 +249,9 @@ public typealias ProductIdentifier = String
                 price: subscriptionData.price.map { ProductPaidPrice(currency: $0.currency, amount: $0.amount) },
                 planKey: subscriptionData.planKey,
                 pendingProductId: subscriptionData.pendingProductId,
-                pendingProductPlanKey: subscriptionData.pendingProductPlanKey
+                pendingProductPlanKey: subscriptionData.pendingProductPlanKey,
+                subscriptionPeriod: subscriptionData.subscriptionPeriod,
+                pendingSubscriptionPeriod: subscriptionData.pendingSubscriptionPeriod
             ))
         })
     }

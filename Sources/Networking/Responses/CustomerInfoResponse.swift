@@ -80,6 +80,8 @@ extension CustomerInfoResponse {
         var planKey: String?
         var pendingProductId: String?
         var pendingProductPlanKey: String?
+        var subscriptionPeriod: String?
+        var pendingSubscriptionPeriod: String?
     }
 
     struct PurchasePaidPrice {
@@ -241,7 +243,9 @@ extension CustomerInfoResponse.Subscription {
         unsubscribeDetectedAt: Date? = nil,
         billingIssuesDetectedAt: Date? = nil,
         ownershipType: PurchaseOwnershipType = .defaultValue,
-        storeTransactionId: String? = nil
+        storeTransactionId: String? = nil,
+        subscriptionPeriod: String? = nil,
+        pendingSubscriptionPeriod: String? = nil
     ) {
         self.periodType = periodType
         self.purchaseDate = purchaseDate
@@ -253,6 +257,8 @@ extension CustomerInfoResponse.Subscription {
         self.billingIssuesDetectedAt = billingIssuesDetectedAt
         self.ownershipType = ownershipType
         self.storeTransactionId = storeTransactionId
+        self.subscriptionPeriod = subscriptionPeriod
+        self.pendingSubscriptionPeriod = pendingSubscriptionPeriod
     }
 
     var asTransaction: CustomerInfoResponse.Transaction {

@@ -195,6 +195,12 @@ extension PeriodType: DefaultValueProvider {
 
     /// For showing the tier name of the pending product
     @objc public var pendingProductPlanKey: String? { self.contents.pendingProductPlanKey }
+
+    /// Subscription billing period in ISO-8601 duration format, for example "P1M" or "P1Y".
+    @objc public var subscriptionPeriod: String? { self.contents.subscriptionPeriod }
+
+    /// Pending subscription billing period in ISO-8601 duration format, for example "P1M" or "P1Y".
+    @objc public var pendingSubscriptionPeriod: String? { self.contents.pendingSubscriptionPeriod }
     
     // Docs inherited from protocol
     // swiftlint:disable:next missing_docs
@@ -222,7 +228,9 @@ extension PeriodType: DefaultValueProvider {
             verification=\(self.contents.verification),
             planKey=\(self.contents.planKey ?? "null"),
             pendingProductId=\(String(describing: self.contents.pendingProductId)),
-            pendingProductPlanKey=\(String(describing: self.contents.pendingProductPlanKey))
+            pendingProductPlanKey=\(String(describing: self.contents.pendingProductPlanKey)),
+            subscriptionPeriod=\(String(describing: self.contents.subscriptionPeriod)),
+            pendingSubscriptionPeriod=\(String(describing: self.contents.pendingSubscriptionPeriod))
             >
             """
     }
@@ -275,7 +283,9 @@ extension PeriodType: DefaultValueProvider {
             verification: verification,
             planKey: subscription.planKey ?? entitlement.planKey,
             pendingProductId: subscription.pendingProductId,
-            pendingProductPlanKey: subscription.pendingProductPlanKey
+            pendingProductPlanKey: subscription.pendingProductPlanKey,
+            subscriptionPeriod: subscription.subscriptionPeriod,
+            pendingSubscriptionPeriod: subscription.pendingSubscriptionPeriod
         )
         self.sandboxEnvironmentDetector = sandboxEnvironmentDetector
 
@@ -365,6 +375,8 @@ private extension EntitlementInfo {
         let planKey: String?
         let pendingProductId: String?
         let pendingProductPlanKey: String?
+        let subscriptionPeriod: String?
+        let pendingSubscriptionPeriod: String?
 
     }
 

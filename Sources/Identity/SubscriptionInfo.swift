@@ -90,6 +90,12 @@ import Foundation
     /// For showing the tier name of the pending product
     @objc public let pendingProductPlanKey: String?
 
+    /// Subscription billing period in ISO-8601 duration format, for example "P1M" or "P1Y".
+    @objc public let subscriptionPeriod: String?
+
+    /// Pending subscription billing period in ISO-8601 duration format, for example "P1M" or "P1Y".
+    @objc public let pendingSubscriptionPeriod: String?
+
     init(productIdentifier: String,
          purchaseDate: Date,
          originalPurchaseDate: Date?,
@@ -107,7 +113,9 @@ import Foundation
          price: ProductPaidPrice?,
          planKey: String?,
          pendingProductId: String?,
-         pendingProductPlanKey: String?) {
+         pendingProductPlanKey: String?,
+         subscriptionPeriod: String?,
+         pendingSubscriptionPeriod: String?) {
         self.productIdentifier = productIdentifier
         self.purchaseDate = purchaseDate
         self.originalPurchaseDate = originalPurchaseDate
@@ -130,6 +138,8 @@ import Foundation
         self.planKey = planKey
         self.pendingProductId = pendingProductId
         self.pendingProductPlanKey = pendingProductPlanKey
+        self.subscriptionPeriod = subscriptionPeriod
+        self.pendingSubscriptionPeriod = pendingSubscriptionPeriod
 
         super.init()
     }
@@ -154,6 +164,8 @@ import Foundation
             planKey: \(String(describing: planKey)),
             pendingProductId: \(String(describing: pendingProductId))
             pendingProductPlanKey: \(String(describing: pendingProductPlanKey))
+            subscriptionPeriod: \(String(describing: subscriptionPeriod))
+            pendingSubscriptionPeriod: \(String(describing: pendingSubscriptionPeriod))
         }
         """
     }
