@@ -156,7 +156,7 @@ final class HTTPClientTests: BaseHTTPClientTests<MockETagManager> {
     }
 
     func testDoesNotEvaluateProxyAuthenticationHeadersWhenProxyURLIsNotConfigured() {
-        let providerCalls: Atomic<Int> = 0
+        let providerCalls: Atomic<Int> = .init(0)
         self.client = self.createClient(
             self.systemInfo,
             proxyAuthenticationHeadersProvider: {
