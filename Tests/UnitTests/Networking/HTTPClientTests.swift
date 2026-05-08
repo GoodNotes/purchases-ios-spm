@@ -64,14 +64,17 @@ class BaseHTTPClientTests<ETag: ETagManager>: TestCase {
 
     fileprivate final func createClient(
         _ systemInfo: SystemInfo,
+        jwtManager: JWTManager = JWTManager(),
+        proxyAuthenticationHeadersProvider: Configuration.ProxyAuthenticationHeadersProvider? = nil,
         operationDispatcher: OperationDispatcher = MockOperationDispatcher()
     ) -> HTTPClient {
         return HTTPClient(apiKey: self.apiKey,
                           systemInfo: systemInfo,
                           eTagManager: self.eTagManager,
-                          jwtManager: JWTManager(),
+                          jwtManager: jwtManager,
                           signing: self.signing,
                           diagnosticsTracker: self.diagnosticsTracker,
+                          proxyAuthenticationHeadersProvider: proxyAuthenticationHeadersProvider,
                           dnsChecker: MockDNSChecker.self,
                           requestTimeout: defaultTimeout.seconds,
                           operationDispatcher: operationDispatcher)
@@ -119,6 +122,101 @@ final class HTTPClientTests: BaseHTTPClientTests<MockETagManager> {
         }
 
         expect(headerPresent.value) == true
+    }
+
+    func testPassesProxyAuthenticationHeadersWhenProxyURLIsConfigured() throws {
+        let proxyURL = try XCTUnwrap(URL(string: "https://proxy.goodnotes.test"))
+        SystemInfo.proxyURL = proxyURL
+        defer { SystemInfo.proxyURL = nil }
+
+        self.client = self.createClient(
+            self.systemInfo,
+            proxyAuthenticationHeadersProvider: {
+                [
+                    "Authorization": "Bearer goodnotes-session",
+                    "Cookie": "ory_kratos_session=session; gnc_accounts_jwt=account-jwt"
+                ]
+            }
+        )
+
+        let request = HTTPRequest(method: .get, path: .mockPath)
+
+        let headers: [String: String]? = waitUntilValue { completion in
+            stub(condition: isHost(proxyURL.host!) && isPath(request.path)) { request in
+                completion(request.allHTTPHeaderFields)
+                return .emptySuccessResponse()
+            }
+
+            self.client.perform(request) { (_: EmptyResponse) in }
+        }
+
+        expect(headers?["Authorization"]) == "Bearer \(self.apiKey)"
+        expect(headers?["Cookie"]).to(contain("ory_kratos_session=session"))
+        expect(headers?["Cookie"]).to(contain("gnc_accounts_jwt=account-jwt"))
+    }
+
+    func testDoesNotEvaluateProxyAuthenticationHeadersWhenProxyURLIsNotConfigured() {
+        let providerCalls: Atomic<Int> = 0
+        self.client = self.createClient(
+            self.systemInfo,
+            proxyAuthenticationHeadersProvider: {
+                providerCalls.modify { $0 += 1 }
+                return ["Cookie": "ory_kratos_session=session"]
+            }
+        )
+
+        let request = HTTPRequest(method: .get, path: .mockPath)
+
+        let headers: [String: String]? = waitUntilValue { completion in
+            stub(condition: isPath(request.path)) { request in
+                completion(request.allHTTPHeaderFields)
+                return .emptySuccessResponse()
+            }
+
+            self.client.perform(request) { (_: EmptyResponse) in }
+        }
+
+        expect(providerCalls.value) == 0
+        expect(headers?["Cookie"]).to(beNil())
+    }
+
+    func testMergesProxyAuthenticationCookiesWithStoredJWT() throws {
+        let proxyURL = try XCTUnwrap(URL(string: "https://proxy.goodnotes.test"))
+        SystemInfo.proxyURL = proxyURL
+        defer { SystemInfo.proxyURL = nil }
+
+        let jwtManager = JWTManager(userDefaults: try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString)))
+        let isiToken = Self.validJWTToken()
+        let response = try XCTUnwrap(HTTPURLResponse(
+            url: proxyURL,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: ["Set-Cookie": "isi_token=\(isiToken); Path=/"]
+        ))
+        jwtManager.store(from: response)
+
+        self.client = self.createClient(
+            self.systemInfo,
+            jwtManager: jwtManager,
+            proxyAuthenticationHeadersProvider: {
+                ["Cookie": "ory_kratos_session=session; gnc_accounts_jwt=account-jwt"]
+            }
+        )
+
+        let request = HTTPRequest(method: .get, path: .mockPath)
+
+        let headers: [String: String]? = waitUntilValue { completion in
+            stub(condition: isHost(proxyURL.host!) && isPath(request.path)) { request in
+                completion(request.allHTTPHeaderFields)
+                return .emptySuccessResponse()
+            }
+
+            self.client.perform(request) { (_: EmptyResponse) in }
+        }
+
+        expect(headers?["Cookie"]).to(contain("ory_kratos_session=session"))
+        expect(headers?["Cookie"]).to(contain("gnc_accounts_jwt=account-jwt"))
+        expect(headers?["Cookie"]).to(contain("isi_token=\(isiToken)"))
     }
 
     func testRequestWithNoNonceDoesNotContainNonceHeader() {
@@ -1726,6 +1824,17 @@ final class HTTPClientTests: BaseHTTPClientTests<MockETagManager> {
             nil,
             .notRequested
         )))
+    }
+
+    private static func validJWTToken() -> String {
+        let payload = #"{"exp":4102444800}"#
+        let encodedPayload = Data(payload.utf8)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+
+        return "e30.\(encodedPayload).signature"
     }
 
 }

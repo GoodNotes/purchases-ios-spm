@@ -281,6 +281,7 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
                      networkTimeout: TimeInterval = Configuration.networkTimeoutDefault,
                      dangerousSettings: DangerousSettings? = nil,
                      showStoreMessagesAutomatically: Bool,
+                     proxyAuthenticationHeadersProvider: Configuration.ProxyAuthenticationHeadersProvider? = nil,
                      diagnosticsEnabled: Bool = false
     ) {
         if userDefaults != nil {
@@ -338,7 +339,8 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
                 productEntitlementMappingFetcher: deviceCache,
                 observerMode: observerMode
             ),
-            diagnosticsTracker: diagnosticsTracker
+            diagnosticsTracker: diagnosticsTracker,
+            proxyAuthenticationHeadersProvider: proxyAuthenticationHeadersProvider
         )
 
         let paymentQueueWrapper: EitherPaymentQueueWrapper = systemInfo.storeKitVersion.isStoreKit2EnabledAndAvailable
@@ -1392,6 +1394,7 @@ public extension Purchases {
                   networkTimeout: configuration.networkTimeout,
                   dangerousSettings: configuration.dangerousSettings,
                   showStoreMessagesAutomatically: configuration.showStoreMessagesAutomatically,
+                  proxyAuthenticationHeadersProvider: configuration.proxyAuthenticationHeadersProvider,
                   diagnosticsEnabled: configuration.diagnosticsEnabled
         )
     }
@@ -1608,6 +1611,7 @@ public extension Purchases {
         networkTimeout: TimeInterval,
         dangerousSettings: DangerousSettings?,
         showStoreMessagesAutomatically: Bool,
+        proxyAuthenticationHeadersProvider: Configuration.ProxyAuthenticationHeadersProvider? = nil,
         diagnosticsEnabled: Bool
     ) -> Purchases {
         return self.setDefaultInstance(
@@ -1623,6 +1627,7 @@ public extension Purchases {
                   networkTimeout: networkTimeout,
                   dangerousSettings: dangerousSettings,
                   showStoreMessagesAutomatically: showStoreMessagesAutomatically,
+                  proxyAuthenticationHeadersProvider: proxyAuthenticationHeadersProvider,
                   diagnosticsEnabled: diagnosticsEnabled)
         )
     }

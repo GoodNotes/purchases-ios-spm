@@ -36,6 +36,7 @@ class Backend {
         attributionFetcher: AttributionFetcher,
         offlineCustomerInfoCreator: OfflineCustomerInfoCreator?,
         diagnosticsTracker: DiagnosticsTrackerType?,
+        proxyAuthenticationHeadersProvider: Configuration.ProxyAuthenticationHeadersProvider? = nil,
         dateProvider: DateProvider = DateProvider()
     ) {
         let httpClient = HTTPClient(apiKey: apiKey,
@@ -44,6 +45,7 @@ class Backend {
                                     jwtManager: jwtManager,
                                     signing: Signing(apiKey: apiKey, clock: systemInfo.clock),
                                     diagnosticsTracker: diagnosticsTracker,
+                                    proxyAuthenticationHeadersProvider: proxyAuthenticationHeadersProvider,
                                     requestTimeout: httpClientTimeout,
                                     operationDispatcher: OperationDispatcher.default)
         let config = BackendConfiguration(httpClient: httpClient,

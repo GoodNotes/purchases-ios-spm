@@ -33,6 +33,7 @@ class HTTPClient {
     private let dnsChecker: DNSCheckerType.Type
     private let signing: SigningType
     private let diagnosticsTracker: DiagnosticsTrackerType?
+    private let proxyAuthenticationHeadersProvider: Configuration.ProxyAuthenticationHeadersProvider?
     private let dateProvider: DateProvider
     private let retriableStatusCodes: Set<HTTPStatusCode>
     private let operationDispatcher: OperationDispatcher
@@ -49,6 +50,7 @@ class HTTPClient {
          jwtManager: JWTManager,
          signing: SigningType,
          diagnosticsTracker: DiagnosticsTrackerType?,
+         proxyAuthenticationHeadersProvider: Configuration.ProxyAuthenticationHeadersProvider? = nil,
          dnsChecker: DNSCheckerType.Type = DNSChecker.self,
          retriableStatusCodes: Set<HTTPStatusCode> = Set([.tooManyRequests]),
          requestTimeout: TimeInterval = Configuration.networkTimeoutDefault,
@@ -68,6 +70,7 @@ class HTTPClient {
         self.jwtManager = jwtManager
         self.signing = signing
         self.diagnosticsTracker = diagnosticsTracker
+        self.proxyAuthenticationHeadersProvider = proxyAuthenticationHeadersProvider
         self.dnsChecker = dnsChecker
         self.retriableStatusCodes = retriableStatusCodes
         self.timeout = requestTimeout
@@ -564,19 +567,23 @@ private extension HTTPClient {
     }
 
     private func headers(for request: Request, urlRequest: URLRequest) -> HTTPClient.RequestHeaders {
+        var headers = request.headers
+
         if request.httpRequest.path.shouldSendEtag {
             let eTagHeader = self.eTagManager.eTagHeader(
                 for: urlRequest,
                 withSignatureVerification: request.verificationMode.isEnabled,
                 refreshETag: request.retried
             )
-            return request.headers
-                .merging(eTagHeader)
-                .merging(jwtManager.jwtHeader())
-        } else {
-            return request.headers
-                .merging(jwtManager.jwtHeader())
+            headers.merge(eTagHeader)
         }
+
+        if SystemInfo.proxyURL != nil {
+            headers.mergeAdditionalHTTPHeaders(proxyAuthenticationHeadersProvider?() ?? [:])
+        }
+
+        headers.mergeAdditionalHTTPHeaders(jwtManager.jwtHeader())
+        return headers
     }
 
     private func signing(for request: HTTPRequest) -> SigningType {
@@ -625,6 +632,45 @@ private extension HTTPClient {
             }
         }
     }
+}
+
+private extension Dictionary where Key == String, Value == String {
+
+    private static var cookieHeaderField: String { "Cookie" }
+
+    mutating func mergeAdditionalHTTPHeaders(_ additionalHeaders: [String: String]) {
+        for (header, value) in additionalHeaders where !value.isEmpty {
+            if header.isCookieHeader {
+                appendCookieHeader(value)
+            } else if key(matchingHeader: header) == nil {
+                self[header] = value
+            }
+        }
+    }
+
+    private mutating func appendCookieHeader(_ value: String) {
+        guard let existingKey = key(matchingHeader: Self.cookieHeaderField),
+              let existingValue = self[existingKey],
+              !existingValue.isEmpty else {
+            self[Self.cookieHeaderField] = value
+            return
+        }
+
+        self[existingKey] = "\(existingValue); \(value)"
+    }
+
+    private func key(matchingHeader header: String) -> String? {
+        return keys.first { $0.caseInsensitiveCompare(header) == .orderedSame }
+    }
+
+}
+
+private extension String {
+
+    var isCookieHeader: Bool {
+        return caseInsensitiveCompare("Cookie") == .orderedSame
+    }
+
 }
 
 // MARK: - Request Retry Logic
