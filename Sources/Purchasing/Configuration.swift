@@ -218,6 +218,8 @@ import Foundation
 
         /// Set additional authentication headers for requests routed through ``Purchases/proxyURL``.
         /// The provider is evaluated for each request so short-lived account tokens can be refreshed by the app.
+        /// Returned `Cookie` values are appended to existing cookies. Other headers are added only when the SDK has
+        /// not already set the same header, so `Authorization` cannot override the RevenueCat API-key authorization.
         public func with(
             proxyAuthenticationHeadersProvider: @escaping ProxyAuthenticationHeadersProvider
         ) -> Builder {
