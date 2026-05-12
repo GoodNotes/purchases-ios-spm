@@ -522,13 +522,23 @@ private extension HTTPClient {
     }
 
     func start(request: Request) {
-        let urlRequest = self.convert(request: request)
+        Task {
+            await self.startAsync(request: request)
+        }
+    }
+
+    private func startAsync(request: Request) async {
+        let urlRequest: URLRequest?
+
+        do {
+            urlRequest = try await self.convert(request: request)
+        } catch {
+            self.fail(request: request, with: .networkError(error))
+            return
+        }
 
         guard let urlRequest = urlRequest else {
-            let error: NetworkError = .unableToCreateRequest(request.httpRequest.path)
-
-            Logger.error(error.description)
-            request.completionHandler?(.failure(error))
+            self.fail(request: request, with: .unableToCreateRequest(request.httpRequest.path))
             return
         }
 
@@ -548,13 +558,13 @@ private extension HTTPClient {
         task.resume()
     }
 
-    func convert(request: Request) -> URLRequest? {
+    func convert(request: Request) async throws -> URLRequest? {
         guard let requestURL = request.httpRequest.path.url(proxyURL: SystemInfo.proxyURL) else {
             return nil
         }
         var urlRequest = URLRequest(url: requestURL)
         urlRequest.httpMethod = request.method.httpMethod
-        urlRequest.allHTTPHeaderFields = self.headers(for: request, urlRequest: urlRequest)
+        urlRequest.allHTTPHeaderFields = try await self.headers(for: request, urlRequest: urlRequest)
 
         do {
             urlRequest.httpBody = try request.httpRequest.requestBody?.jsonEncodedData
@@ -566,7 +576,7 @@ private extension HTTPClient {
         return urlRequest
     }
 
-    private func headers(for request: Request, urlRequest: URLRequest) -> HTTPClient.RequestHeaders {
+    private func headers(for request: Request, urlRequest: URLRequest) async throws -> HTTPClient.RequestHeaders {
         var headers = request.headers
 
         if request.httpRequest.path.shouldSendEtag {
@@ -578,12 +588,18 @@ private extension HTTPClient {
             headers.merge(eTagHeader)
         }
 
-        if SystemInfo.proxyURL != nil {
-            headers.mergeAdditionalHTTPHeaders(proxyAuthenticationHeadersProvider?() ?? [:])
+        if SystemInfo.proxyURL != nil, let proxyAuthenticationHeadersProvider {
+            headers.mergeAdditionalHTTPHeaders(try await proxyAuthenticationHeadersProvider())
         }
 
         headers.mergeAdditionalHTTPHeaders(jwtManager.jwtHeader())
         return headers
+    }
+
+    private func fail(request: Request, with error: NetworkError) {
+        Logger.error(error.description)
+        request.completionHandler?(.failure(error))
+        self.beginNextRequest()
     }
 
     private func signing(for request: HTTPRequest) -> SigningType {

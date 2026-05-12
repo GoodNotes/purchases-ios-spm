@@ -37,7 +37,7 @@ import Foundation
  */
 @objc(RCConfiguration) public final class Configuration: NSObject {
 
-    public typealias ProxyAuthenticationHeadersProvider = () -> [String: String]
+    public typealias ProxyAuthenticationHeadersProvider = () async throws -> [String: String]
 
     static let storeKitRequestTimeoutDefault: TimeInterval = 30
     static let networkTimeoutDefault: TimeInterval = 60

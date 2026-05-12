@@ -155,6 +155,82 @@ final class HTTPClientTests: BaseHTTPClientTests<MockETagManager> {
         expect(headers?["Cookie"]).to(contain("gnc_accounts_jwt=account-jwt"))
     }
 
+    func testAwaitsProxyAuthenticationHeadersForEveryProxiedRequest() throws {
+        let proxyURL = try XCTUnwrap(URL(string: "https://proxy.goodnotes.test"))
+        SystemInfo.proxyURL = proxyURL
+        defer { SystemInfo.proxyURL = nil }
+
+        let providerCalls: Atomic<Int> = .init(0)
+        let receivedHeaders: Atomic<[[String: String]]> = .init([])
+        self.client = self.createClient(
+            self.systemInfo,
+            proxyAuthenticationHeadersProvider: {
+                let requestNumber = providerCalls.modify { calls in
+                    calls += 1
+                    return calls
+                }
+                try await Task.sleep(nanoseconds: 1_000_000)
+                return ["Cookie": "gnc_accounts_jwt=account-jwt-\(requestNumber)"]
+            }
+        )
+
+        let request = HTTPRequest(method: .get, path: .mockPath)
+
+        stub(condition: isHost(proxyURL.host!) && isPath(request.path)) { request in
+            receivedHeaders.modify { headers in
+                headers.append(request.allHTTPHeaderFields ?? [:])
+            }
+            return .emptySuccessResponse()
+        }
+
+        waitUntil { completion in
+            self.client.perform(request) { (_: EmptyResponse) in completion() }
+        }
+        waitUntil { completion in
+            self.client.perform(request) { (_: EmptyResponse) in completion() }
+        }
+
+        expect(providerCalls.value) == 2
+        expect(receivedHeaders.value[safe: 0]?["Cookie"]).to(contain("gnc_accounts_jwt=account-jwt-1"))
+        expect(receivedHeaders.value[safe: 1]?["Cookie"]).to(contain("gnc_accounts_jwt=account-jwt-2"))
+    }
+
+    func testFailsProxiedRequestWhenProxyAuthenticationHeadersProviderThrows() throws {
+        let proxyURL = try XCTUnwrap(URL(string: "https://proxy.goodnotes.test"))
+        SystemInfo.proxyURL = proxyURL
+        defer { SystemInfo.proxyURL = nil }
+
+        let providerError = NSError(domain: "ProxyAuthenticationHeadersProvider", code: 1)
+        let didReachServer: Atomic<Bool> = .init(false)
+        self.client = self.createClient(
+            self.systemInfo,
+            proxyAuthenticationHeadersProvider: {
+                throw providerError
+            }
+        )
+
+        let request = HTTPRequest(method: .get, path: .mockPath)
+        stub(condition: isHost(proxyURL.host!) && isPath(request.path)) { _ in
+            didReachServer.value = true
+            return .emptySuccessResponse()
+        }
+
+        let receivedError: NetworkError? = waitUntilValue { completion in
+            self.client.perform(request) { (result: EmptyResponse) in
+                completion(result.error)
+            }
+        }
+
+        expect(didReachServer.value) == false
+        switch receivedError {
+        case let .networkError(actualError, _):
+            expect(actualError.domain) == providerError.domain
+            expect(actualError.code) == providerError.code
+        default:
+            fail("Unexpected error: \(String(describing: receivedError))")
+        }
+    }
+
     func testDoesNotEvaluateProxyAuthenticationHeadersWhenProxyURLIsNotConfigured() {
         let providerCalls: Atomic<Int> = .init(0)
         self.client = self.createClient(
