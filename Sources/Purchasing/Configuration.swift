@@ -37,6 +37,8 @@ import Foundation
  */
 @objc(RCConfiguration) public final class Configuration: NSObject {
 
+    public typealias ProxyAuthenticationHeadersProvider = () async throws -> [String: String]
+
     static let storeKitRequestTimeoutDefault: TimeInterval = 30
     static let networkTimeoutDefault: TimeInterval = 60
 
@@ -51,6 +53,7 @@ import Foundation
     let platformInfo: Purchases.PlatformInfo?
     let responseVerificationMode: Signing.ResponseVerificationMode
     let showStoreMessagesAutomatically: Bool
+    let proxyAuthenticationHeadersProvider: ProxyAuthenticationHeadersProvider?
     internal let diagnosticsEnabled: Bool
 
     private init(with builder: Builder) {
@@ -67,6 +70,7 @@ import Foundation
         self.platformInfo = builder.platformInfo
         self.responseVerificationMode = builder.responseVerificationMode
         self.showStoreMessagesAutomatically = builder.showStoreMessagesAutomatically
+        self.proxyAuthenticationHeadersProvider = builder.proxyAuthenticationHeadersProvider
         self.diagnosticsEnabled = builder.diagnosticsEnabled
     }
 
@@ -98,6 +102,7 @@ import Foundation
         private(set) var platformInfo: Purchases.PlatformInfo?
         private(set) var responseVerificationMode: Signing.ResponseVerificationMode = .default
         private(set) var showStoreMessagesAutomatically: Bool = true
+        private(set) var proxyAuthenticationHeadersProvider: ProxyAuthenticationHeadersProvider?
         private(set) var diagnosticsEnabled: Bool = false
         private(set) var storeKitVersion: StoreKitVersion = .default
 
@@ -208,6 +213,17 @@ import Foundation
         /// the related methods
         @objc public func with(showStoreMessagesAutomatically: Bool) -> Builder {
             self.showStoreMessagesAutomatically = showStoreMessagesAutomatically
+            return self
+        }
+
+        /// Set additional authentication headers for requests routed through ``Purchases/proxyURL``.
+        /// The provider is evaluated for each request so short-lived account tokens can be refreshed by the app.
+        /// Returned `Cookie` values are appended to existing cookies. Other headers are added only when the SDK has
+        /// not already set the same header, so `Authorization` cannot override the RevenueCat API-key authorization.
+        public func with(
+            proxyAuthenticationHeadersProvider: @escaping ProxyAuthenticationHeadersProvider
+        ) -> Builder {
+            self.proxyAuthenticationHeadersProvider = proxyAuthenticationHeadersProvider
             return self
         }
 
