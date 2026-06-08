@@ -45,6 +45,20 @@ public struct PaywallColor {
     // Only available from iOS 13
     fileprivate var _underlyingColor: (any Sendable)?
 
+    #if compiler(>=6.4)
+    // Swift 6.4 (Xcode 27) synthesizes a memberwise `init(stringRepresentation:)` — the optional
+    // `_underlyingColor` is given an implicit `nil` default and dropped from the parameter list —
+    // which collides with the public throwing `init(stringRepresentation:)` declared below
+    // ("invalid redeclaration of synthesized memberwise init" / "ambiguous use of 'init'").
+    // Declaring an initializer in the type body suppresses the synthesized memberwise init.
+    // Older toolchains don't synthesize a colliding signature, so there the designated
+    // initializer stays in its original extension and behavior is unchanged.
+    private init(stringRepresentation: String, underlyingColor: (any Sendable)?) {
+        self.stringRepresentation = stringRepresentation
+        self._underlyingColor = underlyingColor
+    }
+    #endif
+
 }
 
 // MARK: - Public constructors
@@ -120,11 +134,13 @@ private extension PaywallColor {
 
     #endif
 
+    #if !compiler(>=6.4)
     /// "Designated" initializer
     private init(stringRepresentation: String, underlyingColor: (any Sendable)?) {
         self.stringRepresentation = stringRepresentation
         self._underlyingColor = underlyingColor
     }
+    #endif
 
 }
 
