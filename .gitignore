@@ -34,27 +34,12 @@ CarthageUploads
 **/fastlane/test_output/
 builds/
 Pods/
-IntegrationTests/CarthageInstallation/Cartfile.resolved
 scan_derived_data/
 generated_docs/
 
-# Local clone of `purchases-ios-snapshots` repo to be available for tests.
-Tests/purchases-ios-snapshots
-
 # SPM
+.swiftpm/
 
-# This is the "SPM" scheme, which is duplicated with the scheme in the project
-# and that breaks Carthage because it appears twice in `xcodebuild -list`
-.swiftpm/xcode/xcshareddata/xcschemes/RevenueCat.xcscheme
-
-Examples/**/Package.resolved
-
-Tests/InstallationTests/SPMInstallation/SPMInstallation.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-Tests/InstallationTests/ReceiptParserInstallation/ReceiptParserInstallation.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-Tests/InstallationTests/XcodeDirectInstallation/XcodeDirectInstallation.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-
-# fastlane
-fastlane/.env
 .vscode/settings.json
 
 # Local build settings
