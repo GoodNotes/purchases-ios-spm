@@ -43,7 +43,6 @@ final class PurchasesOrchestrator {
 
     private let _allowSharingAppStoreAccount: Atomic<Bool?> = nil
     private let presentedOfferingContextsByProductID: Atomic<[String: PresentedOfferingContext]> = .init([:])
-    private let presentedPaywall: Atomic<PaywallEvent?> = nil
     private let purchaseCompleteCallbacksByProductID: Atomic<[String: PurchaseCompletedBlock]> = .init([:])
 
     private var appUserID: String { self.currentUserProvider.currentAppUserID }
@@ -70,7 +69,6 @@ final class PurchasesOrchestrator {
     private let beginRefundRequestHelper: BeginRefundRequestHelper
     private let storeMessagesHelper: StoreMessagesHelperType?
     private let winBackOfferEligibilityCalculator: WinBackOfferEligibilityCalculatorType?
-    private let paywallEventsManager: PaywallEventsManagerType?
     private let webPurchaseRedemptionHelper: WebPurchaseRedemptionHelperType
 
     // Can't have these properties with `@available`.
@@ -144,7 +142,6 @@ final class PurchasesOrchestrator {
                      diagnosticsSynchronizer: DiagnosticsSynchronizerType?,
                      diagnosticsTracker: DiagnosticsTrackerType?,
                      winBackOfferEligibilityCalculator: WinBackOfferEligibilityCalculatorType?,
-                     paywallEventsManager: PaywallEventsManagerType?,
                      webPurchaseRedemptionHelper: WebPurchaseRedemptionHelperType
     ) {
         self.init(
@@ -167,7 +164,6 @@ final class PurchasesOrchestrator {
             beginRefundRequestHelper: beginRefundRequestHelper,
             storeMessagesHelper: storeMessagesHelper,
             winBackOfferEligibilityCalculator: winBackOfferEligibilityCalculator,
-            paywallEventsManager: paywallEventsManager,
             webPurchaseRedemptionHelper: webPurchaseRedemptionHelper
         )
 
@@ -223,7 +219,6 @@ final class PurchasesOrchestrator {
          beginRefundRequestHelper: BeginRefundRequestHelper,
          storeMessagesHelper: StoreMessagesHelperType?,
          winBackOfferEligibilityCalculator: WinBackOfferEligibilityCalculatorType?,
-         paywallEventsManager: PaywallEventsManagerType?,
          webPurchaseRedemptionHelper: WebPurchaseRedemptionHelperType
     ) {
         self.productsManager = productsManager
@@ -245,7 +240,6 @@ final class PurchasesOrchestrator {
         self.beginRefundRequestHelper = beginRefundRequestHelper
         self.storeMessagesHelper = storeMessagesHelper
         self.winBackOfferEligibilityCalculator = winBackOfferEligibilityCalculator
-        self.paywallEventsManager = paywallEventsManager
         self.webPurchaseRedemptionHelper = webPurchaseRedemptionHelper
 
         Logger.verbose(Strings.purchase.purchases_orchestrator_init(self))
@@ -493,7 +487,6 @@ final class PurchasesOrchestrator {
                             productIdentifier: productIdentifier
                         ))
 
-                        self.postPaywallEventsIfNeeded()
                     }
                 }
 
@@ -630,7 +623,6 @@ final class PurchasesOrchestrator {
         if let transaction = transaction {
             customerInfo = try await self.handlePurchasedTransaction(transaction, .purchase, metadata)
 
-            self.postPaywallEventsIfNeeded()
         } else {
             // `transaction` would be `nil` for `Product.PurchaseResult.pending` and
             // `Product.PurchaseResult.userCancelled`.
@@ -673,35 +665,6 @@ final class PurchasesOrchestrator {
 
     func cachePresentedOfferingContext(_ context: PresentedOfferingContext, productIdentifier: String) {
         self.presentedOfferingContextsByProductID.modify { $0[productIdentifier] = context }
-    }
-
-    func track(paywallEvent: PaywallEvent) {
-        switch paywallEvent {
-        case .impression:
-            self.cachePresentedPaywall(paywallEvent)
-
-        case .close:
-            self.clearPresentedPaywall()
-
-        case .cancel:
-            break
-        }
-    }
-
-    func postPaywallEventsIfNeeded(delayed: Bool = false) {
-        guard #available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *),
-              let manager = self.paywallEventsManager else { return }
-
-        let delay: JitterableDelay
-        if delayed {
-            delay = .long
-        } else {
-            // When backgrounding, the app only has about 5 seconds to perform work
-            delay = .none
-        }
-        self.operationDispatcher.dispatchOnWorkerThread(jitterableDelay: delay) {
-            _ = try? await manager.flushEvents(count: PaywallEventsManager.defaultEventFlushCount)
-        }
     }
 
 #if os(iOS) || os(macOS) || VISION_OS
@@ -1445,15 +1408,8 @@ private extension PurchasesOrchestrator {
                                  transactionData: PurchasedTransactionData?,
                                  subscriberAttributes: SubscriberAttribute.Dictionary,
                                  adServicesToken: String?) {
-        switch result {
-        case let .success(customerInfo):
+        if case let .success(customerInfo) = result {
             self.customerInfoManager.cache(customerInfo: customerInfo, appUserID: self.appUserID)
-
-        case .failure:
-            // Cache paywall again in case purchase is retried.
-            if let paywall = transactionData?.presentedPaywall {
-                self.cachePresentedPaywall(paywall)
-            }
         }
 
         self.markSyncedIfNeeded(subscriberAttributes: subscriberAttributes,
@@ -1465,13 +1421,11 @@ private extension PurchasesOrchestrator {
                                     storefront: StorefrontType?,
                                     restored: Bool) {
         let offeringContext = self.getAndRemovePresentedOfferingContext(for: purchasedTransaction)
-        let paywall = self.getAndRemovePresentedPaywall()
         let unsyncedAttributes = self.unsyncedAttributes
         self.attribution.unsyncedAdServicesToken { adServicesToken in
             let transactionData: PurchasedTransactionData = .init(
                 appUserID: self.appUserID,
                 presentedOfferingContext: offeringContext,
-                presentedPaywall: paywall,
                 unsyncedAttributes: unsyncedAttributes,
                 aadAttributionToken: adServicesToken,
                 storefront: storefront,
@@ -1527,16 +1481,6 @@ private extension PurchasesOrchestrator {
         }
     }
 
-    func cachePresentedPaywall(_ paywall: PaywallEvent) {
-        Logger.verbose(Strings.paywalls.caching_presented_paywall)
-        self.presentedPaywall.value = paywall
-    }
-
-    func clearPresentedPaywall() {
-        Logger.verbose(Strings.paywalls.clearing_presented_paywall)
-        self.presentedPaywall.value = nil
-    }
-
     func getAndRemovePresentedOfferingContext(for productIdentifier: String) -> PresentedOfferingContext? {
         return self.presentedOfferingContextsByProductID.modify {
             $0.removeValue(forKey: productIdentifier)
@@ -1545,10 +1489,6 @@ private extension PurchasesOrchestrator {
 
     func getAndRemovePresentedOfferingContext(for transaction: StoreTransaction) -> PresentedOfferingContext? {
         return self.getAndRemovePresentedOfferingContext(for: transaction.productIdentifier)
-    }
-
-    func getAndRemovePresentedPaywall() -> PaywallEvent? {
-        return self.presentedPaywall.getAndSet(nil)
     }
 
     /// Computes a `ProductRequestData` for an active subscription found in the receipt,
@@ -1715,13 +1655,11 @@ extension PurchasesOrchestrator {
     ) async throws -> CustomerInfo {
         let storefront = await Storefront.currentStorefront
         let offeringContext = self.getAndRemovePresentedOfferingContext(for: transaction)
-        let paywall = self.getAndRemovePresentedPaywall()
         let unsyncedAttributes = self.unsyncedAttributes
         let adServicesToken = await self.attribution.unsyncedAdServicesToken
         let transactionData: PurchasedTransactionData = .init(
             appUserID: self.appUserID,
             presentedOfferingContext: offeringContext,
-            presentedPaywall: paywall,
             unsyncedAttributes: unsyncedAttributes,
             metadata: metadata,
             aadAttributionToken: adServicesToken,

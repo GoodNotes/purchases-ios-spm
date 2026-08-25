@@ -12,13 +12,8 @@
 //  Created by Nacho Soto on 4/25/23.w
 
 /**
- Purpose: this file is needed because several parts of the SDK need to explicitily reference a type or value
- from the `RevenueCat` target. However, we expose 2 variants of the framework from SPM:
- `RevenueCat` and `RevenueCat_CustomEntitlementComputation` (see `Package.swift`).
-  Because of that, we can't simply do `RevenueCat.ErrorCode` for example, since the other variant
-  would need `RevenueCat_CustomEntitlementComputation.ErrorCode`.
-
-  To handle that, this exposes those types explicitly so they work regardless of the name of the framework.
+ Purpose: several parts of the SDK need to explicitly reference a type or value whose Objective-C name already uses
+ the `RC` prefix. These aliases keep those references unambiguous without qualifying them through the module name.
  */
 
 typealias RCRefundRequestStatus = RefundRequestStatus

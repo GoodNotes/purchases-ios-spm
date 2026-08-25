@@ -26,7 +26,6 @@ enum Strings {
     static let network = NetworkStrings.self
     static let offering = OfferingStrings.self
     static let offlineEntitlements = OfflineEntitlementsStrings.self
-    static let paywalls = PaywallsStrings.self
     static let purchase = PurchaseStrings.self
     static let webRedemption = WebRedemptionStrings.self
     static let receipt = ReceiptStrings.self

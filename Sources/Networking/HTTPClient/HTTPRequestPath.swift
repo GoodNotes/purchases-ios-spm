@@ -70,14 +70,7 @@ extension HTTPRequest {
         case postAdServicesToken(appUserID: String)
         case health
         case getProductEntitlementMapping
-        case getCustomerCenterConfig(appUserID: String)
         case postRedeemWebPurchase
-
-    }
-
-    enum PaywallPath: Hashable {
-
-        case postEvents
 
     }
 
@@ -105,8 +98,7 @@ extension HTTPRequest.Path: HTTPRequestPath {
                 .postSubscriberAttributes,
                 .postAdServicesToken,
                 .postRedeemWebPurchase,
-                .getProductEntitlementMapping,
-                .getCustomerCenterConfig:
+                .getProductEntitlementMapping:
             return true
 
         case .health:
@@ -126,8 +118,7 @@ extension HTTPRequest.Path: HTTPRequestPath {
                 .postSubscriberAttributes,
                 .postAdServicesToken,
                 .postRedeemWebPurchase,
-                .getProductEntitlementMapping,
-                .getCustomerCenterConfig:
+                .getProductEntitlementMapping:
             return true
         case .health:
             return false
@@ -148,8 +139,7 @@ extension HTTPRequest.Path: HTTPRequestPath {
                 .postAttributionData,
                 .postAdServicesToken,
                 .postOfferForSigning,
-                .postRedeemWebPurchase,
-                .getCustomerCenterConfig:
+                .postRedeemWebPurchase:
             return false
         }
     }
@@ -168,8 +158,7 @@ extension HTTPRequest.Path: HTTPRequestPath {
                 .postAdServicesToken,
                 .postOfferForSigning,
                 .postRedeemWebPurchase,
-                .getProductEntitlementMapping,
-                .getCustomerCenterConfig:
+                .getProductEntitlementMapping:
             return false
         }
     }
@@ -208,9 +197,6 @@ extension HTTPRequest.Path: HTTPRequestPath {
 
         case .getProductEntitlementMapping:
             return "product_entitlement_mapping"
-
-        case let .getCustomerCenterConfig(appUserID):
-            return "customercenter/\(Self.escape(appUserID))"
 
         case .postRedeemWebPurchase:
             return "subscribers/redeem_purchase"
@@ -252,9 +238,6 @@ extension HTTPRequest.Path: HTTPRequestPath {
 
         case .getProductEntitlementMapping:
             return "get_product_entitlement_mapping"
-
-        case .getCustomerCenterConfig:
-            return "customer_center"
 
         case .postRedeemWebPurchase:
             return "post_redeem_web_purchase"

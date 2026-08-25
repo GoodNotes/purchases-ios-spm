@@ -29,11 +29,8 @@ struct OfferingsResponse {
         let identifier: String
         let description: String
         let packages: [Package]
-        @IgnoreDecodeErrors<PaywallData?>
-        var paywall: PaywallData?
         @DefaultDecodable.EmptyDictionary
         var metadata: [String: AnyDecodable]
-        var paywallComponents: PaywallComponentsData?
 
     }
 
@@ -52,7 +49,6 @@ struct OfferingsResponse {
     let offerings: [Offering]
     let placements: Placements?
     let targeting: Targeting?
-    let uiConfig: UIConfig?
 
 }
 

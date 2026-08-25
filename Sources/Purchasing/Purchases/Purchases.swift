@@ -246,7 +246,6 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
     private let attributionPoster: AttributionPoster
     private let backend: Backend
     private let deviceCache: DeviceCache
-    private let paywallCache: PaywallCacheWarmingType?
     private let identityManager: IdentityManager
     private let userDefaults: UserDefaults
     private let notificationCenter: NotificationCenter
@@ -255,7 +254,6 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
     private let offlineEntitlementsManager: OfflineEntitlementsManager
     private let productsManager: ProductsManagerType
     private let customerInfoManager: CustomerInfoManager
-    private let paywallEventsManager: PaywallEventsManagerType?
     private let trialOrIntroPriceEligibilityChecker: CachingTrialOrIntroPriceEligibilityChecker
     private let purchasedProductsFetcher: PurchasedProductsFetcherType?
     private let purchasesOrchestrator: PurchasesOrchestrator
@@ -411,24 +409,6 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
                                               attributeSyncing: subscriberAttributesManager,
                                               appUserID: appUserID)
 
-        let paywallEventsManager: PaywallEventsManagerType?
-        do {
-            if #available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *) {
-                paywallEventsManager = PaywallEventsManager(
-                    internalAPI: backend.internalAPI,
-                    userProvider: identityManager,
-                    store: try PaywallEventStore.createDefault(applicationSupportDirectory: applicationSupportDirectory)
-                )
-                Logger.verbose(Strings.paywalls.event_manager_initialized)
-            } else {
-                Logger.verbose(Strings.paywalls.event_manager_not_initialized_not_available)
-                paywallEventsManager = nil
-            }
-        } catch {
-            Logger.verbose(Strings.paywalls.event_manager_failed_to_initialize(error))
-            paywallEventsManager = nil
-        }
-
         let attributionPoster = AttributionPoster(deviceCache: deviceCache,
                                                   currentUserProvider: identityManager,
                                                   backend: backend,
@@ -516,7 +496,6 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
                     diagnosticsSynchronizer: diagnosticsSynchronizer,
                     diagnosticsTracker: diagnosticsTracker,
                     winBackOfferEligibilityCalculator: winBackOfferEligibilityCalculator,
-                    paywallEventsManager: paywallEventsManager,
                     webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper(backend: backend,
                                                                              identityManager: identityManager,
                                                                              customerInfoManager: customerInfoManager)
@@ -542,7 +521,6 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
                     beginRefundRequestHelper: beginRefundRequestHelper,
                     storeMessagesHelper: storeMessagesHelper,
                     winBackOfferEligibilityCalculator: winBackOfferEligibilityCalculator,
-                    paywallEventsManager: paywallEventsManager,
                     webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper(backend: backend,
                                                                              identityManager: identityManager,
                                                                              customerInfoManager: customerInfoManager)
@@ -560,14 +538,6 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
                                                       productsManager: productsManager)
         )
 
-        let paywallCache: PaywallCacheWarmingType?
-
-        if #available(iOS 15.0, macOS 12.0, watchOS 8.0, tvOS 15.0, *) {
-            paywallCache = PaywallCacheWarming(introEligibiltyChecker: trialOrIntroPriceChecker)
-        } else {
-            paywallCache = nil
-        }
-
         self.init(appUserID: appUserID,
                   requestFetcher: fetcher,
                   receiptFetcher: receiptFetcher,
@@ -580,12 +550,10 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
                   systemInfo: systemInfo,
                   offeringsFactory: offeringsFactory,
                   deviceCache: deviceCache,
-                  paywallCache: paywallCache,
                   identityManager: identityManager,
                   subscriberAttributes: subscriberAttributes,
                   operationDispatcher: operationDispatcher,
                   customerInfoManager: customerInfoManager,
-                  paywallEventsManager: paywallEventsManager,
                   productsManager: productsManager,
                   offeringsManager: offeringsManager,
                   offlineEntitlementsManager: offlineEntitlementsManager,
@@ -609,12 +577,10 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
          systemInfo: SystemInfo,
          offeringsFactory: OfferingsFactory,
          deviceCache: DeviceCache,
-         paywallCache: PaywallCacheWarmingType?,
          identityManager: IdentityManager,
          subscriberAttributes: Attribution,
          operationDispatcher: OperationDispatcher,
          customerInfoManager: CustomerInfoManager,
-         paywallEventsManager: PaywallEventsManagerType?,
          productsManager: ProductsManagerType,
          offeringsManager: OfferingsManager,
          offlineEntitlementsManager: OfflineEntitlementsManager,
@@ -653,7 +619,6 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
         self.paymentQueueWrapper = paymentQueueWrapper
         self.offeringsFactory = offeringsFactory
         self.deviceCache = deviceCache
-        self.paywallCache = paywallCache
         self.identityManager = identityManager
         self.userDefaults = userDefaults
         self.notificationCenter = notificationCenter
@@ -661,7 +626,6 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
         self.attribution = subscriberAttributes
         self.operationDispatcher = operationDispatcher
         self.customerInfoManager = customerInfoManager
-        self.paywallEventsManager = paywallEventsManager
         self.productsManager = productsManager
         self.offeringsManager = offeringsManager
         self.offlineEntitlementsManager = offlineEntitlementsManager
@@ -862,9 +826,6 @@ public extension Purchases {
                 self.updateOfferingsCache(isAppBackgrounded: isAppBackgrounded)
             }
 
-            self.operationDispatcher.dispatchOnWorkerThread {
-                await self.paywallEventsManager?.resetAppSessionID()
-            }
         }
     }
 
@@ -896,10 +857,6 @@ public extension Purchases {
                     }
                 }
                 return
-            }
-
-            self.operationDispatcher.dispatchOnWorkerThread {
-                await self.paywallEventsManager?.resetAppSessionID()
             }
 
             self.updateAllCaches {
@@ -1314,44 +1271,6 @@ public extension Purchases {
 }
 
 // swiftlint:enable missing_docs
-
-// MARK: - Paywalls & Customer Center
-
-@available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
-public extension Purchases {
-
-    /// Used by `RevenueCatUI` to keep track of ``PaywallEvent``s.
-    func track(paywallEvent: PaywallEvent) async {
-        self.purchasesOrchestrator.track(paywallEvent: paywallEvent)
-        await self.paywallEventsManager?.track(featureEvent: paywallEvent)
-    }
-
-    /// Used by `RevenueCatUI` to keep track of ``CustomerCenterEvent``s.
-    func track(customerCenterEvent: any CustomerCenterEventType) {
-        operationDispatcher.dispatchOnWorkerThread {
-            // If we make CustomerCenterEventType implement FeatureEvent, we have to make FeatureEvent public
-            guard let event = customerCenterEvent as? FeatureEvent else { return }
-            await self.paywallEventsManager?.track(featureEvent: event)
-        }
-    }
-
-    /// Used by `RevenueCatUI` to download Customer Center data
-    func loadCustomerCenter() async throws -> CustomerCenterConfigData {
-        let response = try await Async.call { completion in
-            self.backend.customerCenterConfig.getCustomerCenterConfig(appUserID: self.appUserID,
-                                                                      isAppBackgrounded: false) { result in
-                completion(result.mapError(\.asPublicError))
-            }
-        }
-
-        return CustomerCenterConfigData(from: response)
-    }
-
-    /// Used by `RevenueCatUI` to download and cache paywall images.
-    @available(iOS 15.0, macOS 12.0, watchOS 8.0, tvOS 15.0, *)
-    static let paywallImageDownloadSession: URLSession = PaywallCacheWarming.downloadSession
-
-}
 
 // MARK: Configuring Purchases
 
@@ -1886,13 +1805,6 @@ internal extension Purchases {
         self.offeringsManager.invalidateCachedOfferings(appUserID: self.appUserID)
     }
 
-    /// - Throws: if posting events fails
-    /// - Returns: the number of events posted
-    @available(iOS 15.0, tvOS 15.0, macOS 12.0, watchOS 8.0, *)
-    func flushPaywallEvents(count: Int) async throws -> Int {
-        return try await self.paywallEventsManager?.flushEvents(count: count) ?? 0
-    }
-
 }
 
 #endif
@@ -1931,16 +1843,11 @@ private extension Purchases {
         }
         #endif
 
-        self.purchasesOrchestrator.postPaywallEventsIfNeeded(delayed: true)
-
         #endif
     }
 
     @objc func applicationDidEnterBackground() {
         self.dispatchSyncSubscriberAttributes()
-        #if !ENABLE_CUSTOM_ENTITLEMENT_COMPUTATION
-        self.purchasesOrchestrator.postPaywallEventsIfNeeded()
-        #endif
     }
 
     func subscribeToAppStateNotifications() {
@@ -2040,16 +1947,9 @@ private extension Purchases {
     private func updateOfferingsCache(isAppBackgrounded: Bool) {
         self.offeringsManager.updateOfferingsCache(
             appUserID: self.appUserID,
-            isAppBackgrounded: isAppBackgrounded
-        ) { [cache = self.paywallCache] offerings in
-            if #available(iOS 15.0, macOS 12.0, watchOS 8.0, tvOS 15.0, *),
-               let cache = cache, let offerings = offerings.value {
-                self.operationDispatcher.dispatchOnWorkerThread {
-                    await cache.warmUpEligibilityCache(offerings: offerings)
-                    await cache.warmUpPaywallImagesCache(offerings: offerings)
-                }
-            }
-        }
+            isAppBackgrounded: isAppBackgrounded,
+            completion: nil
+        )
     }
 
 }

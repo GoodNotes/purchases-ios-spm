@@ -20,7 +20,6 @@ class Backend {
     let offlineEntitlements: OfflineEntitlementsAPI
     let customer: CustomerAPI
     let internalAPI: InternalAPI
-    let customerCenterConfig: CustomerCenterConfigAPI
     let redeemWebPurchaseAPI: RedeemWebPurchaseAPI
     let jwtManager: JWTManager
 
@@ -64,7 +63,6 @@ class Backend {
         let offerings = OfferingsAPI(backendConfig: backendConfig)
         let offlineEntitlements = OfflineEntitlementsAPI(backendConfig: backendConfig)
         let internalAPI = InternalAPI(backendConfig: backendConfig)
-        let customerCenterConfig = CustomerCenterConfigAPI(backendConfig: backendConfig)
         let redeemWebPurchaseAPI = RedeemWebPurchaseAPI(backendConfig: backendConfig)
 
         self.init(backendConfig: backendConfig,
@@ -73,7 +71,6 @@ class Backend {
                   offeringsAPI: offerings,
                   offlineEntitlements: offlineEntitlements,
                   internalAPI: internalAPI,
-                  customerCenterConfig: customerCenterConfig,
                   redeemWebPurchaseAPI: redeemWebPurchaseAPI)
     }
 
@@ -83,7 +80,6 @@ class Backend {
                   offeringsAPI: OfferingsAPI,
                   offlineEntitlements: OfflineEntitlementsAPI,
                   internalAPI: InternalAPI,
-                  customerCenterConfig: CustomerCenterConfigAPI,
                   redeemWebPurchaseAPI: RedeemWebPurchaseAPI) {
         self.config = backendConfig
 
@@ -92,7 +88,6 @@ class Backend {
         self.offerings = offeringsAPI
         self.offlineEntitlements = offlineEntitlements
         self.internalAPI = internalAPI
-        self.customerCenterConfig = customerCenterConfig
         self.redeemWebPurchaseAPI = redeemWebPurchaseAPI
         self.jwtManager = backendConfig.httpClient.jwtManager
     }

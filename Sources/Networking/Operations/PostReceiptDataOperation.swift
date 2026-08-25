@@ -130,7 +130,6 @@ extension PostReceiptDataOperation {
         let presentedOfferingIdentifier: String?
         let presentedPlacementIdentifier: String?
         let appliedTargetingRule: AppliedTargetingRule?
-        let paywall: Paywall?
         let observerMode: Bool
         let initiationSource: ProductRequestData.InitiationSource
         let subscriberAttributesByKey: SubscriberAttribute.Dictionary?
@@ -147,16 +146,6 @@ extension PostReceiptDataOperation {
         let transactions: [String]?
         /// All signed StoreKit 2 renewal info JWS tokens.
         let renewalInfo: [String]?
-    }
-
-    struct Paywall {
-
-        var sessionID: String
-        var revision: Int
-        var displayMode: PaywallViewMode
-        var darkMode: Bool
-        var localeIdentifier: String
-
     }
 
     struct AppliedTargetingRule {
@@ -190,7 +179,6 @@ extension PostReceiptDataOperation.PostData {
             appliedTargetingRule: data.presentedOfferingContext?.targetingContext.flatMap {
                 .init(revision: $0.revision, ruleId: $0.ruleId)
             },
-            paywall: data.paywall,
             observerMode: observerMode,
             initiationSource: data.source.initiationSource,
             subscriberAttributesByKey: data.unsyncedAttributes,
@@ -201,20 +189,6 @@ extension PostReceiptDataOperation.PostData {
             transactions: transactions,
             renewalInfo: renewalInfo
         )
-    }
-
-}
-
-private extension PurchasedTransactionData {
-
-    var paywall: PostReceiptDataOperation.Paywall? {
-        guard let paywall = self.presentedPaywall else { return nil }
-
-        return .init(sessionID: paywall.data.sessionIdentifier.uuidString,
-                     revision: paywall.data.paywallRevision,
-                     displayMode: paywall.data.displayMode,
-                     darkMode: paywall.data.darkMode,
-                     localeIdentifier: paywall.data.localeIdentifier)
     }
 
 }
@@ -279,7 +253,6 @@ extension PostReceiptDataOperation.PostData: Encodable {
         case presentedOfferingIdentifier
         case presentedPlacementIdentifier
         case appliedTargetingRule
-        case paywall
         case testReceiptIdentifier = "test_receipt_identifier"
         case appTransaction = "app_transaction"
         case metadata
@@ -306,8 +279,6 @@ extension PostReceiptDataOperation.PostData: Encodable {
         try container.encodeIfPresent(self.presentedOfferingIdentifier, forKey: .presentedOfferingIdentifier)
         try container.encodeIfPresent(self.presentedPlacementIdentifier, forKey: .presentedPlacementIdentifier)
         try container.encodeIfPresent(self.appliedTargetingRule, forKey: .appliedTargetingRule)
-        try container.encodeIfPresent(self.paywall, forKey: .paywall)
-
         try container.encodeIfPresent(
             self.subscriberAttributesByKey
                 .map(SubscriberAttribute.map)
@@ -322,20 +293,6 @@ extension PostReceiptDataOperation.PostData: Encodable {
     }
 
     var fetchToken: String? { return self.receipt.serialized() }
-
-}
-
-extension PostReceiptDataOperation.Paywall: Codable {
-
-    private enum CodingKeys: String, CodingKey {
-
-        case sessionID = "sessionId"
-        case revision
-        case displayMode
-        case darkMode
-        case localeIdentifier = "locale"
-
-    }
 
 }
 

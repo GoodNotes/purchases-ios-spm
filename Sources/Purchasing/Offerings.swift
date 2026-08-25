@@ -177,8 +177,6 @@ private extension Offering {
         return Offering(identifier: self.identifier,
                         serverDescription: self.serverDescription,
                         metadata: self.metadata,
-                        paywall: self.paywall,
-                        paywallComponents: self.paywallComponents,
                         availablePackages: updatedPackages
         )
     }
