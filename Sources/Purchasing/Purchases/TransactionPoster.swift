@@ -26,7 +26,6 @@ struct PurchasedTransactionData {
 
     var appUserID: String
     var presentedOfferingContext: PresentedOfferingContext?
-    var presentedPaywall: PaywallEvent?
     var unsyncedAttributes: SubscriberAttribute.Dictionary?
     var metadata: [String: String]?
     var aadAttributionToken: String?
@@ -92,7 +91,7 @@ final class TransactionPoster: TransactionPosterType {
             transactionDate: transaction.purchaseDate,
             offeringID: data.presentedOfferingContext?.offeringIdentifier,
             placementID: data.presentedOfferingContext?.placementIdentifier,
-            paywallSessionID: data.presentedPaywall?.data.sessionIdentifier
+            paywallSessionID: nil
         ))
 
         guard let productIdentifier = transaction.productIdentifier.notEmpty else {

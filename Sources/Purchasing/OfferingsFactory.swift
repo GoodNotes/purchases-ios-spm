@@ -22,8 +22,7 @@ class OfferingsFactory {
             .offerings
             .compactMap { offeringData in
                 createOffering(from: storeProductsByID,
-                               offering: offeringData,
-                               uiConfig: data.uiConfig)
+                               offering: offeringData)
             }
             .dictionaryAllowingDuplicateKeys { $0.identifier }
 
@@ -40,8 +39,7 @@ class OfferingsFactory {
 
     func createOffering(
         from storeProductsByID: [String: StoreProduct],
-        offering: OfferingsResponse.Offering,
-        uiConfig: UIConfig?
+        offering: OfferingsResponse.Offering
     ) -> Offering? {
         let availablePackages: [Package] = offering.packages.compactMap { package in
             createPackage(with: package, productsByID: storeProductsByID, offeringIdentifier: offering.identifier)
@@ -52,21 +50,9 @@ class OfferingsFactory {
             return nil
         }
 
-        let paywallComponents: Offering.PaywallComponents? = {
-            if let uiConfig, let paywallComponents = offering.paywallComponents {
-                return .init(
-                    uiConfig: uiConfig,
-                    data: paywallComponents
-                )
-            }
-            return nil
-        }()
-
         return Offering(identifier: offering.identifier,
                         serverDescription: offering.description,
                         metadata: offering.metadata.mapValues(\.asAny),
-                        paywall: offering.paywall,
-                        paywallComponents: paywallComponents,
                         availablePackages: availablePackages)
     }
 

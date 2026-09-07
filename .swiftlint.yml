@@ -1,9 +1,5 @@
 excluded:
   - Carthage
-  - Examples
-  - Tests/InstallationTests
-  - Tests/TestingApps
-  - Tests/APITesters
   - vendor
   - scan_derived_data
   - .git
@@ -27,15 +23,6 @@ disabled_rules:
   - static_over_final_class
 
 custom_rules:
-  xctestcase_superclass:
-    included: ".*\\.swift"
-    excluded:
-      - Tests/ReceiptParserTests
-      - Tests/v3LoadShedderIntegration
-    regex: "\\: XCTestCase \\{"
-    name: "XCTestCase Superclass"
-    message: "Test classes must inherit `TestCase` instead."
-    
   return_switch_forbidden:
     included: ".*\\.swift"
     name: "Forbidden 'return switch' usage"
