@@ -29,12 +29,14 @@ class OfferingsAPI {
 
     func getOfferings(appUserID: String,
                       isAppBackgrounded: Bool,
+                      includeStripeProducts: Bool = false,
                       completion: @escaping OfferingsResponseHandler) {
         let config = NetworkOperation.UserSpecificConfiguration(httpClient: self.backendConfig.httpClient,
                                                                 appUserID: appUserID)
         let factory = GetOfferingsOperation.createFactory(
             configuration: config,
-            offeringsCallbackCache: self.offeringsCallbacksCache
+            offeringsCallbackCache: self.offeringsCallbacksCache,
+            includeStripeProducts: includeStripeProducts
         )
 
         let offeringsCallback = OfferingsCallback(cacheKey: factory.cacheKey, completion: completion)

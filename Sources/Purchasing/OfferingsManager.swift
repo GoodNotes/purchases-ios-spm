@@ -43,11 +43,13 @@ class OfferingsManager {
         appUserID: String,
         fetchPolicy: FetchPolicy = .default,
         fetchCurrent: Bool = false,
+        includeStripeProducts: Bool = false,
         completion: (@MainActor @Sendable (Result<Offerings, Error>) -> Void)?
     ) {
         self.offeringsWithSource(appUserID: appUserID,
                                  fetchPolicy: fetchPolicy,
-                                 fetchCurrent: fetchCurrent) { result in
+                                 fetchCurrent: fetchCurrent,
+                                 includeStripeProducts: includeStripeProducts) { result in
             completion?(result.map { $0.offerings })
         }
     }
@@ -56,18 +58,21 @@ class OfferingsManager {
         appUserID: String,
         fetchPolicy: FetchPolicy = .default,
         fetchCurrent: Bool = false,
+        includeStripeProducts: Bool = false,
         completion: (@MainActor @Sendable (Result<(offerings: Offerings, source: OfferingsSource), Error>) -> Void)?
     ) {
         guard !fetchCurrent else {
             self.fetchFromNetworkWithSource(appUserID: appUserID,
                                             fetchPolicy: fetchPolicy,
+                                            includeStripeProducts: includeStripeProducts,
                                             completion: completion)
             return
         }
 
-        guard let memoryCachedOfferings = self.cachedOfferings else {
+        guard let memoryCachedOfferings = self.cachedOfferings(includeStripeProducts: includeStripeProducts) else {
             self.fetchFromNetworkWithSource(appUserID: appUserID,
                                             fetchPolicy: fetchPolicy,
+                                            includeStripeProducts: includeStripeProducts,
                                             completion: completion)
             return
         }
@@ -79,10 +84,12 @@ class OfferingsManager {
         )
 
         self.systemInfo.isApplicationBackgrounded { isAppBackgrounded in
-            if self.deviceCache.isOfferingsCacheStale(isAppBackgrounded: isAppBackgrounded) {
+            if self.deviceCache.isOfferingsCacheStale(isAppBackgrounded: isAppBackgrounded,
+                                                      includeStripeProducts: includeStripeProducts) {
                 self.updateOfferingsCache(appUserID: appUserID,
                                           isAppBackgrounded: isAppBackgrounded,
                                           fetchPolicy: fetchPolicy,
+                                          includeStripeProducts: includeStripeProducts,
                                           completion: nil)
             }
         }
@@ -92,15 +99,21 @@ class OfferingsManager {
         return self.deviceCache.cachedOfferings
     }
 
+    func cachedOfferings(includeStripeProducts: Bool) -> Offerings? {
+        self.deviceCache.cachedOfferings(includeStripeProducts: includeStripeProducts)
+    }
+
     func updateOfferingsCache(
         appUserID: String,
         isAppBackgrounded: Bool,
         fetchPolicy: FetchPolicy = .default,
+        includeStripeProducts: Bool = false,
         completion: (@MainActor @Sendable (Result<Offerings, Error>) -> Void)?
     ) {
         self.updateOfferingsCacheWithSource(appUserID: appUserID,
                                             isAppBackgrounded: isAppBackgrounded,
-                                            fetchPolicy: fetchPolicy) { result in
+                                            fetchPolicy: fetchPolicy,
+                                            includeStripeProducts: includeStripeProducts) { result in
             completion?(result.map { $0.offerings })
         }
     }
@@ -109,14 +122,18 @@ class OfferingsManager {
         appUserID: String,
         isAppBackgrounded: Bool,
         fetchPolicy: FetchPolicy = .default,
+        includeStripeProducts: Bool = false,
         completion: (@MainActor @Sendable (Result<(offerings: Offerings, source: OfferingsSource), Error>) -> Void)?
     ) {
-        self.backend.offerings.getOfferings(appUserID: appUserID, isAppBackgrounded: isAppBackgrounded) { result in
+        self.backend.offerings.getOfferings(appUserID: appUserID,
+                                            isAppBackgrounded: isAppBackgrounded,
+                                            includeStripeProducts: includeStripeProducts) { result in
             switch result {
             case let .success(response):
                 self.handleOfferingsBackendResult(with: response,
                                                   appUserID: appUserID,
                                                   fetchPolicy: fetchPolicy,
+                                                  includeStripeProducts: includeStripeProducts,
                                                   completion: completion)
 
             case let .failure(.networkError(networkError)) where networkError.isServerDown:
@@ -124,7 +141,8 @@ class OfferingsManager {
 
                 // If unable to fetch offerings when server is down, attempt to load them from disk cache.
                 self.fetchCachedOfferingsFromDisk(appUserID: appUserID,
-                                                  fetchPolicy: fetchPolicy) { offerings in
+                                                  fetchPolicy: fetchPolicy,
+                                                  includeStripeProducts: includeStripeProducts) { offerings in
                     if let offerings = offerings {
                         self.dispatchCompletionOnMainThreadIfPossible(
                             completion,
@@ -157,8 +175,12 @@ class OfferingsManager {
 
     func invalidateAndReFetchCachedOfferingsIfAppropiate(appUserID: String) {
         let cachedOfferings = self.deviceCache.cachedOfferings
+        let cachedStripeOfferings = self.cachedOfferings(includeStripeProducts: true)
         self.invalidateCachedOfferings(appUserID: appUserID)
 
+        if cachedStripeOfferings != nil {
+            self.offerings(appUserID: appUserID, includeStripeProducts: true) { @Sendable _ in }
+        }
         if cachedOfferings != nil {
             self.offerings(appUserID: appUserID, fetchPolicy: .ignoreNotFoundProducts) { @Sendable _ in }
         }
@@ -171,10 +193,12 @@ private extension OfferingsManager {
     func fetchFromNetwork(
         appUserID: String,
         fetchPolicy: FetchPolicy = .default,
+        includeStripeProducts: Bool = false,
         completion: (@MainActor @Sendable (Result<Offerings, Error>) -> Void)?
     ) {
         self.fetchFromNetworkWithSource(appUserID: appUserID,
-                                        fetchPolicy: fetchPolicy) { result in
+                                        fetchPolicy: fetchPolicy,
+                                        includeStripeProducts: includeStripeProducts) { result in
             completion?(result.map { $0.offerings })
         }
     }
@@ -182,6 +206,7 @@ private extension OfferingsManager {
     func fetchFromNetworkWithSource(
         appUserID: String,
         fetchPolicy: FetchPolicy = .default,
+        includeStripeProducts: Bool = false,
         completion: (@MainActor @Sendable (Result<(offerings: Offerings, source: OfferingsSource), Error>) -> Void)?
     ) {
         Logger.debug(Strings.offering.no_cached_offerings_fetching_from_network)
@@ -190,6 +215,7 @@ private extension OfferingsManager {
             self.updateOfferingsCacheWithSource(appUserID: appUserID,
                                                 isAppBackgrounded: isAppBackgrounded,
                                                 fetchPolicy: fetchPolicy,
+                                                includeStripeProducts: includeStripeProducts,
                                                 completion: completion)
         }
     }
@@ -197,9 +223,11 @@ private extension OfferingsManager {
     func fetchCachedOfferingsFromDisk(
         appUserID: String,
         fetchPolicy: FetchPolicy,
+        includeStripeProducts: Bool = false,
         completion: (@escaping @Sendable (Offerings?) -> Void)
     ) {
-        guard let data = self.deviceCache.cachedOfferingsResponseData(appUserID: appUserID),
+        guard let data = self.deviceCache.cachedOfferingsResponseData(appUserID: appUserID,
+                                                                           includeStripeProducts: includeStripeProducts),
               let response: OfferingsResponse = try? JSONDecoder.default.decode(jsonData: data, logErrors: true) else {
             completion(nil)
             return
@@ -214,8 +242,8 @@ private extension OfferingsManager {
                     Logger.debug(Strings.offering.vending_offerings_cache_from_disk)
 
                     // Cache in memory but as stale, so it can be re-updated when possible
-                    cache.cacheInMemory(offerings: offerings)
-                    cache.clearOfferingsCacheTimestamp()
+                    cache.cacheInMemory(offerings: offerings, includeStripeProducts: includeStripeProducts)
+                    cache.clearOfferingsCacheTimestamp(includeStripeProducts: includeStripeProducts)
 
                     completion(offerings)
 
@@ -276,11 +304,13 @@ private extension OfferingsManager {
         with response: OfferingsResponse,
         appUserID: String,
         fetchPolicy: FetchPolicy,
+        includeStripeProducts: Bool = false,
         completion: (@MainActor @Sendable (Result<Offerings, Error>) -> Void)?
     ) {
         self.handleOfferingsBackendResult(with: response,
                                           appUserID: appUserID,
                                           fetchPolicy: fetchPolicy,
+                                          includeStripeProducts: includeStripeProducts,
                                           completion: completion.map { completion in
             { result in
                 self.dispatchCompletionOnMainThreadIfPossible(
@@ -295,6 +325,7 @@ private extension OfferingsManager {
         with response: OfferingsResponse,
         appUserID: String,
         fetchPolicy: FetchPolicy,
+        includeStripeProducts: Bool = false,
         completion: (@MainActor @Sendable (Result<(offerings: Offerings, source: OfferingsSource), Error>) -> Void)?
     ) {
         self.createOfferings(from: response, fetchPolicy: fetchPolicy) { result in
@@ -302,7 +333,8 @@ private extension OfferingsManager {
             case let .success(offerings):
                 Logger.rcSuccess(Strings.offering.offerings_stale_updated_from_network)
 
-                self.deviceCache.cache(offerings: offerings, appUserID: appUserID)
+                self.deviceCache.cache(offerings: offerings, appUserID: appUserID,
+                                       includeStripeProducts: includeStripeProducts)
                 self.dispatchCompletionOnMainThreadIfPossible(
                     completion,
                     value: .success((offerings: offerings, source: .remote))

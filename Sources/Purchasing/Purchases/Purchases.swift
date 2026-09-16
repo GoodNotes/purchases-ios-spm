@@ -772,6 +772,22 @@ public extension Purchases {
         return try await self.offerings(fetchPolicy: .default)
     }
 
+    /// Requests App Store products with optional Stripe identifiers from the ISI proxy.
+    /// The two modes use independent offerings caches. StoreKit only receives App Store IDs.
+    func offerings(includeStripeProducts: Bool) async throws -> Offerings {
+        try await withCheckedThrowingContinuation { continuation in
+            self.offeringsManager.offerings(appUserID: self.appUserID,
+                                            includeStripeProducts: includeStripeProducts) { result in
+                continuation.resume(with: result.mapError { $0.asPublicError })
+            }
+        }
+    }
+
+    /// Returns only the cache for the requested product platforms.
+    func cachedOfferings(includeStripeProducts: Bool) -> Offerings? {
+        self.offeringsManager.cachedOfferings(includeStripeProducts: includeStripeProducts)
+    }
+
     func offeringsWithSource() async throws -> (offerings: Offerings, source: OfferingsSource) {
         return try await self.offeringsWithSource(fetchPolicy: .default)
     }

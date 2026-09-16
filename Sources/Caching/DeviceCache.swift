@@ -24,6 +24,7 @@ class DeviceCache {
     private let sandboxEnvironmentDetector: SandboxEnvironmentDetector
     private let userDefaults: SynchronizedUserDefaults
     private let offeringsCachedObject: InMemoryCachedObject<Offerings>
+    private let stripeOfferingsCachedObject = InMemoryCachedObject<Offerings>()
 
     private let _cachedAppUserID: Atomic<String?>
     private let _cachedLegacyAppUserID: Atomic<String?>
@@ -87,7 +88,9 @@ class DeviceCache {
 
             // Clear offerings cache.
             self.offeringsCachedObject.clearCache()
+            self.stripeOfferingsCachedObject.clearCache()
             userDefaults.removeObject(forKey: CacheKey.offerings(oldAppUserID))
+            userDefaults.removeObject(forKey: CacheKey.stripeOfferings(oldAppUserID))
 
             // Delete attributes if synced for the old app user id.
             if Self.unsyncedAttributesByKey(userDefaults, appUserID: oldAppUserID).isEmpty {
@@ -155,39 +158,54 @@ class DeviceCache {
 
     // MARK: - Offerings
 
-    func cachedOfferingsResponseData(appUserID: String) -> Data? {
+    private func offeringsCache(includeStripeProducts: Bool) -> InMemoryCachedObject<Offerings> {
+        includeStripeProducts ? self.stripeOfferingsCachedObject : self.offeringsCachedObject
+    }
+
+    func cachedOfferings(includeStripeProducts: Bool) -> Offerings? {
+        self.offeringsCache(includeStripeProducts: includeStripeProducts).cachedInstance
+    }
+
+    private func offeringsCacheKey(appUserID: String, includeStripeProducts: Bool) -> CacheKey {
+        includeStripeProducts ? .stripeOfferings(appUserID) : .offerings(appUserID)
+    }
+
+    func cachedOfferingsResponseData(appUserID: String, includeStripeProducts: Bool = false) -> Data? {
         return self.userDefaults.read {
-            $0.data(forKey: CacheKey.offerings(appUserID))
+            $0.data(forKey: self.offeringsCacheKey(appUserID: appUserID, includeStripeProducts: includeStripeProducts))
         }
     }
 
-    func cache(offerings: Offerings, appUserID: String) {
-        self.cacheInMemory(offerings: offerings)
+    func cache(offerings: Offerings, appUserID: String, includeStripeProducts: Bool = false) {
+        self.cacheInMemory(offerings: offerings, includeStripeProducts: includeStripeProducts)
         self.userDefaults.write {
-            $0.set(codable: offerings.response, forKey: CacheKey.offerings(appUserID))
+            $0.set(codable: offerings.response,
+                   forKey: self.offeringsCacheKey(appUserID: appUserID, includeStripeProducts: includeStripeProducts))
         }
     }
 
-    func cacheInMemory(offerings: Offerings) {
-        self.offeringsCachedObject.cache(instance: offerings)
+    func cacheInMemory(offerings: Offerings, includeStripeProducts: Bool = false) {
+        self.offeringsCache(includeStripeProducts: includeStripeProducts).cache(instance: offerings)
     }
 
     func clearOfferingsCache(appUserID: String) {
         self.offeringsCachedObject.clearCache()
+        self.stripeOfferingsCachedObject.clearCache()
         self.userDefaults.write {
             $0.removeObject(forKey: CacheKey.offerings(appUserID))
+            $0.removeObject(forKey: CacheKey.stripeOfferings(appUserID))
         }
     }
 
-    func isOfferingsCacheStale(isAppBackgrounded: Bool) -> Bool {
-        return self.offeringsCachedObject.isCacheStale(
+    func isOfferingsCacheStale(isAppBackgrounded: Bool, includeStripeProducts: Bool = false) -> Bool {
+        return self.offeringsCache(includeStripeProducts: includeStripeProducts).isCacheStale(
             durationInSeconds: self.cacheDurationInSeconds(isAppBackgrounded: isAppBackgrounded,
                                                            isSandbox: self.sandboxEnvironmentDetector.isSandbox)
         )
     }
 
-    func clearOfferingsCacheTimestamp() {
-        self.offeringsCachedObject.clearCacheTimestamp()
+    func clearOfferingsCacheTimestamp(includeStripeProducts: Bool = false) {
+        self.offeringsCache(includeStripeProducts: includeStripeProducts).clearCacheTimestamp()
     }
 
     // MARK: - subscriber attributes
@@ -388,6 +406,7 @@ class DeviceCache {
         case customerInfo(String)
         case customerInfoLastUpdated(String)
         case offerings(String)
+        case stripeOfferings(String)
         case legacySubscriberAttributes(String)
         case attributionDataDefaults(String)
         case syncedSK2ObserverModeTransactionIDs
@@ -396,6 +415,7 @@ class DeviceCache {
             switch self {
             case let .customerInfo(userID): return "\(Self.base)purchaserInfo.\(userID)"
             case let .customerInfoLastUpdated(userID): return "\(Self.base)purchaserInfoLastUpdated.\(userID)"
+            case let .stripeOfferings(userID): return "\(Self.base)offerings.ios-stripe.\(userID)"
             case let .offerings(userID): return "\(Self.base)offerings.\(userID)"
             case let .legacySubscriberAttributes(userID): return "\(Self.legacySubscriberAttributesBase)\(userID)"
             case let .attributionDataDefaults(userID): return "\(Self.base)attribution.\(userID)"
