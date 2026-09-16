@@ -131,7 +131,10 @@ extension ETagManager {
 
     // Visible for tests
     static func cacheKey(for request: URLRequest) -> String? {
-        return request.url?.absoluteString
+        guard let url = request.url?.absoluteString else { return nil }
+        guard let platforms = request.value(forHTTPHeaderField: "x-supported-platforms") else { return url }
+        let appType = request.value(forHTTPHeaderField: "x-app-type") ?? ""
+        return "\(url)|app-type=\(appType)|platforms=\(platforms)"
     }
 
 }

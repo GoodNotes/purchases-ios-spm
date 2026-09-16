@@ -24,6 +24,8 @@ struct HTTPRequest {
     var nonce: Data?
     /// Whether or not this request should be retried by the HTTPClient for certain status codes.
     var isRetryable: Bool
+    /// Headers scoped to this request, including the requested ISI product platforms.
+    var additionalHeaders: Headers = [:]
 
     init(
         method: Method,

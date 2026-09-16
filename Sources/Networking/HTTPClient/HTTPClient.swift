@@ -588,20 +588,24 @@ private extension HTTPClient {
     ) async throws -> HTTPClient.RequestHeaders {
         var headers = request.headers
 
+        if isProxyRequest, let proxyAuthenticationHeadersProvider {
+            headers.mergeAdditionalHTTPHeaders(try await proxyAuthenticationHeadersProvider())
+        }
+        headers.mergeAdditionalHTTPHeaders(jwtManager.jwtHeader())
+        headers.mergeAdditionalHTTPHeaders(request.httpRequest.additionalHeaders)
+
         if request.httpRequest.path.shouldSendEtag {
+            // Use the same platform headers for cache lookup and response storage.
+            var cacheRequest = urlRequest
+            cacheRequest.allHTTPHeaderFields = headers
             let eTagHeader = self.eTagManager.eTagHeader(
-                for: urlRequest,
+                for: cacheRequest,
                 withSignatureVerification: request.verificationMode.isEnabled,
                 refreshETag: request.retried
             )
             headers.merge(eTagHeader)
         }
 
-        if isProxyRequest, let proxyAuthenticationHeadersProvider {
-            headers.mergeAdditionalHTTPHeaders(try await proxyAuthenticationHeadersProvider())
-        }
-
-        headers.mergeAdditionalHTTPHeaders(jwtManager.jwtHeader())
         return headers
     }
 
