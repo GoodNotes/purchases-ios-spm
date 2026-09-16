@@ -120,7 +120,10 @@ import Foundation
     /// See https://www.notion.so/goodnotes-team/Notes-on-new-user-profile-23bb740273d280c2906aead605407d90
     @objc public let planKey: String?
 
-    /// Initialize a ``Package``.
+    /// Stripe product paired with this App Store package by ISI, when requested.
+    @objc public let stripeProductIdentifier: String?
+
+    /// Initialize an App Store ``Package`` without an associated Stripe product.
     @objc
     public convenience init(
         identifier: String,
@@ -129,12 +132,40 @@ import Foundation
         offeringIdentifier: String,
         planKey: String?
     ) {
+        self.init(identifier: identifier, packageType: packageType, storeProduct: storeProduct,
+                  offeringIdentifier: offeringIdentifier, planKey: planKey, stripeProductIdentifier: nil)
+    }
+
+    /// Initialize an App Store ``Package`` without an associated Stripe product.
+    @objc
+    public convenience init(
+        identifier: String,
+        packageType: PackageType,
+        storeProduct: StoreProduct,
+        presentedOfferingContext: PresentedOfferingContext,
+        planKey: String?
+    ) {
+        self.init(identifier: identifier, packageType: packageType, storeProduct: storeProduct,
+                  presentedOfferingContext: presentedOfferingContext, planKey: planKey, stripeProductIdentifier: nil)
+    }
+
+    /// Initialize a ``Package``.
+    @objc
+    public convenience init(
+        identifier: String,
+        packageType: PackageType,
+        storeProduct: StoreProduct,
+        offeringIdentifier: String,
+        planKey: String?,
+        stripeProductIdentifier: String?
+    ) {
         self.init(
             identifier: identifier,
             packageType: packageType,
             storeProduct: storeProduct,
             presentedOfferingContext: .init(offeringIdentifier: offeringIdentifier),
-            planKey: planKey
+            planKey: planKey,
+            stripeProductIdentifier: stripeProductIdentifier
         )
     }
 
@@ -145,13 +176,15 @@ import Foundation
         packageType: PackageType,
         storeProduct: StoreProduct,
         presentedOfferingContext: PresentedOfferingContext,
-        planKey: String?
+        planKey: String?,
+        stripeProductIdentifier: String?
     ) {
         self.identifier = identifier
         self.packageType = packageType
         self.storeProduct = storeProduct
         self.presentedOfferingContext = presentedOfferingContext
         self.planKey = planKey
+        self.stripeProductIdentifier = stripeProductIdentifier
 
         super.init()
     }
@@ -164,7 +197,8 @@ import Foundation
             self.packageType == other.packageType &&
             self.storeProduct == other.storeProduct &&
             self.presentedOfferingContext == other.presentedOfferingContext &&
-            self.planKey == other.planKey
+            self.planKey == other.planKey &&
+            self.stripeProductIdentifier == other.stripeProductIdentifier
         )
     }
 
@@ -175,6 +209,7 @@ import Foundation
         hasher.combine(self.storeProduct)
         hasher.combine(self.presentedOfferingContext)
         hasher.combine(self.planKey)
+        hasher.combine(self.stripeProductIdentifier)
 
         return hasher.finalize()
     }

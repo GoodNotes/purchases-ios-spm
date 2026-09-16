@@ -170,7 +170,8 @@ private extension Offering {
                            packageType: pkg.packageType,
                            storeProduct: pkg.storeProduct,
                            presentedOfferingContext: newContext,
-                           planKey: pkg.planKey
+                           planKey: pkg.planKey,
+                           stripeProductIdentifier: pkg.stripeProductIdentifier
             )
         }
 
