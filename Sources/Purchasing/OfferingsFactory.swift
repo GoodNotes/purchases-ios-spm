@@ -42,7 +42,10 @@ class OfferingsFactory {
         offering: OfferingsResponse.Offering
     ) -> Offering? {
         let availablePackages: [Package] = offering.packages.compactMap { package in
-            createPackage(with: package, productsByID: storeProductsByID, offeringIdentifier: offering.identifier)
+            createPackage(with: package,
+                          productsByID: storeProductsByID,
+                          offeringIdentifier: offering.identifier,
+                          stripeProductIdentifier: offering.stripeProductIdentifier(for: package))
         }
 
         guard !availablePackages.isEmpty else {
@@ -59,15 +62,17 @@ class OfferingsFactory {
     func createPackage(
         with data: OfferingsResponse.Offering.Package,
         productsByID: [String: StoreProduct],
-        offeringIdentifier: String
+        offeringIdentifier: String,
+        stripeProductIdentifier: String? = nil
     ) -> Package? {
-        guard let product = productsByID[data.platformProductIdentifier] else {
+        guard data.isAppStoreProduct, let product = productsByID[data.platformProductIdentifier] else {
             return nil
         }
 
         return .init(package: data,
                      product: product,
-                     offeringIdentifier: offeringIdentifier)
+                     offeringIdentifier: offeringIdentifier,
+                     stripeProductIdentifier: stripeProductIdentifier)
     }
 
     func createPlacement(
@@ -93,13 +98,15 @@ private extension Package {
     convenience init(
         package: OfferingsResponse.Offering.Package,
         product: StoreProduct,
-        offeringIdentifier: String
+        offeringIdentifier: String,
+        stripeProductIdentifier: String?
     ) {
         self.init(identifier: package.identifier,
                   packageType: Package.packageType(from: package.identifier),
                   storeProduct: product,
                   offeringIdentifier: offeringIdentifier,
-                  planKey: package.planKey)
+                  planKey: package.planKey,
+                  stripeProductIdentifier: stripeProductIdentifier)
     }
 
 }

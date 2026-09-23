@@ -17,25 +17,30 @@ final class GetOfferingsOperation: CacheableNetworkOperation {
 
     private let offeringsCallbackCache: CallbackCache<OfferingsCallback>
     private let configuration: AppUserConfiguration
+    private let includeStripeProducts: Bool
 
     static func createFactory(
         configuration: UserSpecificConfiguration,
-        offeringsCallbackCache: CallbackCache<OfferingsCallback>
+        offeringsCallbackCache: CallbackCache<OfferingsCallback>,
+        includeStripeProducts: Bool = false
     ) -> CacheableNetworkOperationFactory<GetOfferingsOperation> {
         return .init({ cacheKey in
                     .init(
                         configuration: configuration,
                         offeringsCallbackCache: offeringsCallbackCache,
-                        cacheKey: cacheKey
+                        cacheKey: cacheKey,
+                        includeStripeProducts: includeStripeProducts
                     )
             },
-            individualizedCacheKeyPart: configuration.appUserID)
+            individualizedCacheKeyPart: configuration.appUserID + (includeStripeProducts ? ":ios,stripe" : ""))
     }
 
     private init(configuration: UserSpecificConfiguration,
                  offeringsCallbackCache: CallbackCache<OfferingsCallback>,
-                 cacheKey: String) {
+                 cacheKey: String,
+                 includeStripeProducts: Bool) {
         self.configuration = configuration
+        self.includeStripeProducts = includeStripeProducts
         self.offeringsCallbackCache = offeringsCallbackCache
 
         super.init(configuration: configuration, cacheKey: cacheKey)
@@ -64,7 +69,10 @@ private extension GetOfferingsOperation {
             return
         }
 
-        let request = HTTPRequest(method: .get, path: .getOfferings(appUserID: appUserID))
+        var request = HTTPRequest(method: .get, path: .getOfferings(appUserID: appUserID))
+        if self.includeStripeProducts {
+            request.additionalHeaders = ["x-app-type": "ios", "x-supported-platforms": "ios,stripe"]
+        }
 
         httpClient.perform(request) { (response: VerifiedHTTPResponse<OfferingsResponse>.Result) in
             defer {
