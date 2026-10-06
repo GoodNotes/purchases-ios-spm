@@ -13,10 +13,34 @@
 
 import Foundation
 
-/// A `UserDefaults` wrapper to synchronize access and writes.
+/// Uses the thread safety provided by `UserDefaults` for individual operations.
+/// Avoid holding an external lock while `UserDefaults` delivers notifications on the main thread.
+internal final class SynchronizedUserDefaults {
+
+    private let userDefaults: UserDefaults
+
+    init(userDefaults: UserDefaults) {
+        self.userDefaults = userDefaults
+    }
+
+    func read<T>(_ action: (UserDefaults) throws -> T) rethrows -> T {
+        return try action(self.userDefaults)
+    }
+
+    func write(_ action: (UserDefaults) throws -> Void) rethrows {
+        try action(self.userDefaults)
+        self.userDefaults.synchronize()
+    }
+
+}
+
+// `UserDefaults` is thread-safe; this wrapper has no mutable state.
+extension SynchronizedUserDefaults: @unchecked Sendable {}
+
+/// Serializes read-modify-write operations such as subscriber-attribute updates.
 ///
 /// - SeeAlso: `Atomic`.
-internal final class SynchronizedUserDefaults {
+internal final class LockingSynchronizedUserDefaults {
 
     private let atomic: Atomic<UserDefaults>
 
@@ -46,4 +70,4 @@ internal final class SynchronizedUserDefaults {
 
 }
 
-extension SynchronizedUserDefaults: Sendable {}
+extension LockingSynchronizedUserDefaults: Sendable {}

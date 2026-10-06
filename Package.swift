@@ -54,6 +54,9 @@ let package = Package(
                 swiftSettings: [visionOSSetting]
                     + ciCompilerFlags
                     + additionalCompilerFlags
-                    + [.define("ENABLE_TRANSACTION_METADATA")])
+                    + [.define("ENABLE_TRANSACTION_METADATA")]),
+        .testTarget(name: "RevenueCatConcurrencyTests",
+                    dependencies: ["RevenueCat"],
+                    path: "Tests/RevenueCatConcurrencyTests")
     ]
 )
