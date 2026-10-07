@@ -23,6 +23,7 @@ class DeviceCache {
 
     private let sandboxEnvironmentDetector: SandboxEnvironmentDetector
     private let userDefaults: SynchronizedUserDefaults
+    private let lockingUserDefaults: LockingSynchronizedUserDefaults
     private let offeringsCachedObject: InMemoryCachedObject<Offerings>
     private let stripeOfferingsCachedObject = InMemoryCachedObject<Offerings>()
 
@@ -37,6 +38,7 @@ class DeviceCache {
         self.sandboxEnvironmentDetector = sandboxEnvironmentDetector
         self.offeringsCachedObject = offeringsCachedObject
         self.userDefaults = .init(userDefaults: userDefaults)
+        self.lockingUserDefaults = .init(userDefaults: userDefaults)
         self._cachedAppUserID = .init(userDefaults.string(forKey: CacheKeys.appUserDefaults))
         self._cachedLegacyAppUserID = .init(userDefaults.string(forKey: CacheKeys.legacyGeneratedAppUserDefaults))
 
@@ -54,7 +56,7 @@ class DeviceCache {
         default defaultValue: Value,
         updater: @Sendable (inout Value) -> Void
     ) {
-        self.userDefaults.write {
+        self.lockingUserDefaults.write {
             var value: Value = $0.value(forKey: key) ?? defaultValue
             updater(&value)
             $0.set(codable: value, forKey: key)
@@ -77,7 +79,7 @@ class DeviceCache {
     }
 
     func clearCaches(oldAppUserID: String, andSaveWithNewUserID newUserID: String) {
-        self.userDefaults.write { userDefaults in
+        self.lockingUserDefaults.write { userDefaults in
             userDefaults.removeObject(forKey: CacheKeys.legacyGeneratedAppUserDefaults)
             userDefaults.removeObject(
                 forKey: CacheKey.customerInfo(oldAppUserID)
@@ -219,7 +221,7 @@ class DeviceCache {
             return
         }
 
-        self.userDefaults.write {
+        self.lockingUserDefaults.write {
             Self.store($0, subscriberAttributesByKey: subscriberAttributesByKey, appUserID: appUserID)
         }
     }
@@ -241,7 +243,7 @@ class DeviceCache {
     }
 
     func cleanupSubscriberAttributes() {
-        self.userDefaults.write {
+        self.lockingUserDefaults.write {
             Self.migrateSubscriberAttributes($0)
             Self.deleteSyncedSubscriberAttributesForOtherUsers($0)
         }
@@ -268,7 +270,7 @@ class DeviceCache {
     }
 
     func deleteAttributesIfSynced(appUserID: String) {
-        self.userDefaults.write {
+        self.lockingUserDefaults.write {
             guard Self.unsyncedAttributesByKey($0, appUserID: appUserID).isEmpty else {
                 return
             }
@@ -277,7 +279,7 @@ class DeviceCache {
     }
 
     func copySubscriberAttributes(oldAppUserID: String, newAppUserID: String) {
-        self.userDefaults.write {
+        self.lockingUserDefaults.write {
             let unsyncedAttributesToCopy = Self.unsyncedAttributesByKey($0, appUserID: oldAppUserID)
             guard !unsyncedAttributesToCopy.isEmpty else {
                 return
