@@ -62,6 +62,27 @@ struct OfferingsRequestHeadersTests {
         #expect(platformValues(in: headers) == ["iOS"])
     }
 
+    @Test
+    func eTagCacheKeySeparatesTargetedPlatforms() throws {
+        let url = try #require(URL(string: "https://isi.example.com/v1/subscribers/gn-id/offerings"))
+        func request(platform: String) -> URLRequest {
+            var request = URLRequest(url: url)
+            request.allHTTPHeaderFields = [
+                "X-Platform": platform,
+                "x-app-type": "ios",
+                "x-supported-platforms": "ios,stripe"
+            ]
+            return request
+        }
+
+        let appStoreKey = ETagManager.cacheKey(for: request(platform: "iOS"))
+        let stripeKey = ETagManager.cacheKey(for: request(platform: "stripe"))
+
+        #expect(appStoreKey != stripeKey)
+        #expect(stripeKey == "\(url.absoluteString)|app-type=ios|platform=stripe|platforms=ios,stripe")
+        #expect(ETagManager.cacheKey(for: URLRequest(url: url)) == url.absoluteString)
+    }
+
     private func platformValues(in headers: HTTPClient.RequestHeaders) -> [String] {
         headers.filter { $0.key.caseInsensitiveCompare("X-Platform") == .orderedSame }.map(\.value)
     }

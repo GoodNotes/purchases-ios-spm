@@ -134,7 +134,9 @@ extension ETagManager {
         guard let url = request.url?.absoluteString else { return nil }
         guard let platforms = request.value(forHTTPHeaderField: "x-supported-platforms") else { return url }
         let appType = request.value(forHTTPHeaderField: "x-app-type") ?? ""
-        return "\(url)|app-type=\(appType)|platforms=\(platforms)"
+        // ISI targets offerings on `x-platform`, so responses for different platforms need separate ETags.
+        let platform = request.value(forHTTPHeaderField: "x-platform") ?? ""
+        return "\(url)|app-type=\(appType)|platform=\(platform)|platforms=\(platforms)"
     }
 
 }
