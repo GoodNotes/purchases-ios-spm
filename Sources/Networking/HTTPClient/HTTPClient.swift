@@ -592,7 +592,7 @@ private extension HTTPClient {
             headers.mergeAdditionalHTTPHeaders(try await proxyAuthenticationHeadersProvider())
         }
         headers.mergeAdditionalHTTPHeaders(jwtManager.jwtHeader())
-        headers.mergeAdditionalHTTPHeaders(request.httpRequest.additionalHeaders)
+        headers.applyRequestScopedHTTPHeaders(request.httpRequest.additionalHeaders)
 
         if request.httpRequest.path.shouldSendEtag {
             // Use the same platform headers for cache lookup and response storage.
@@ -663,9 +663,24 @@ private extension HTTPClient {
     }
 }
 
-private extension Dictionary where Key == String, Value == String {
+extension Dictionary where Key == String, Value == String {
 
     private static var cookieHeaderField: String { "Cookie" }
+
+    /// Headers scoped to one request replace default headers with the same name (e.g. `X-Platform`).
+    /// Cookies are appended, as in ``mergeAdditionalHTTPHeaders(_:)``.
+    mutating func applyRequestScopedHTTPHeaders(_ requestHeaders: [String: String]) {
+        for (header, value) in requestHeaders where !value.isEmpty {
+            if header.isCookieHeader {
+                appendCookieHeader(value)
+            } else {
+                if let existingKey = key(matchingHeader: header) {
+                    removeValue(forKey: existingKey)
+                }
+                self[header] = value
+            }
+        }
+    }
 
     mutating func mergeAdditionalHTTPHeaders(_ additionalHeaders: [String: String]) {
         for (header, value) in additionalHeaders where !value.isEmpty {
