@@ -57,6 +57,9 @@ let package = Package(
                     + [.define("ENABLE_TRANSACTION_METADATA")]),
         .testTarget(name: "RevenueCatConcurrencyTests",
                     dependencies: ["RevenueCat"],
-                    path: "Tests/RevenueCatConcurrencyTests")
+                    path: "Tests/RevenueCatConcurrencyTests"),
+        .testTarget(name: "RevenueCatNetworkingTests",
+                    dependencies: ["RevenueCat"],
+                    path: "Tests/RevenueCatNetworkingTests")
     ]
 )

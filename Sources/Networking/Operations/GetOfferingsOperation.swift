@@ -50,6 +50,13 @@ final class GetOfferingsOperation: CacheableNetworkOperation {
         self.getOfferings(completion: completion)
     }
 
+    /// ISI targets Stripe offerings on `x-platform: stripe`. Only the offerings request sends it;
+    /// every other request keeps the default `X-Platform` header.
+    static func additionalHeaders(includeStripeProducts: Bool) -> HTTPRequest.Headers {
+        guard includeStripeProducts else { return [:] }
+        return ["x-app-type": "ios", "x-platform": "stripe", "x-supported-platforms": "ios,stripe"]
+    }
+
 }
 
 // Restating inherited @unchecked Sendable from Foundation's Operation
@@ -70,9 +77,7 @@ private extension GetOfferingsOperation {
         }
 
         var request = HTTPRequest(method: .get, path: .getOfferings(appUserID: appUserID))
-        if self.includeStripeProducts {
-            request.additionalHeaders = ["x-app-type": "ios", "x-supported-platforms": "ios,stripe"]
-        }
+        request.additionalHeaders = Self.additionalHeaders(includeStripeProducts: self.includeStripeProducts)
 
         httpClient.perform(request) { (response: VerifiedHTTPResponse<OfferingsResponse>.Result) in
             defer {
