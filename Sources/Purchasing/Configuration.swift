@@ -218,8 +218,11 @@ import Foundation
 
         /// Set additional authentication headers for requests routed through ``Purchases/proxyURL``.
         /// The provider is evaluated for each request so short-lived account tokens can be refreshed by the app.
-        /// Returned `Cookie` values are appended to existing cookies. Other headers are added only when the SDK has
-        /// not already set the same header, so `Authorization` cannot override the RevenueCat API-key authorization.
+        /// Returned `Cookie` values are appended to existing cookies. An explicit `Authorization` replaces the
+        /// SDK API-key authorization only for proxy requests, allowing Good Systems OIDC authentication.
+        /// Other existing SDK headers cannot be replaced. The proxy must define how its public API key is
+        /// transported when Authorization is used for a user token; provide that header separately.
+        /// Never return a user token for a proxy origin that is not trusted by the application.
         public func with(
             proxyAuthenticationHeadersProvider: @escaping ProxyAuthenticationHeadersProvider
         ) -> Builder {

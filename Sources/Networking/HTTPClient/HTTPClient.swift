@@ -589,7 +589,7 @@ private extension HTTPClient {
         var headers = request.headers
 
         if isProxyRequest, let proxyAuthenticationHeadersProvider {
-            headers.mergeAdditionalHTTPHeaders(try await proxyAuthenticationHeadersProvider())
+            headers.mergeProxyAuthenticationHeaders(try await proxyAuthenticationHeadersProvider())
         }
         headers.mergeAdditionalHTTPHeaders(jwtManager.jwtHeader())
         headers.applyRequestScopedHTTPHeaders(request.httpRequest.additionalHeaders)
@@ -664,6 +664,18 @@ private extension HTTPClient {
 }
 
 extension Dictionary where Key == String, Value == String {
+
+    /// Only the explicitly configured proxy authentication provider may replace
+    /// Authorization. SDK integrity, platform and nonce headers stay protected.
+    mutating func mergeProxyAuthenticationHeaders(_ additionalHeaders: [String: String]) {
+        for (header, value) in additionalHeaders where !value.isEmpty {
+            if header.caseInsensitiveCompare("Authorization") == .orderedSame {
+                if let existingKey = key(matchingHeader: header) { removeValue(forKey: existingKey) }
+                self["Authorization"] = value
+            }
+        }
+        mergeAdditionalHTTPHeaders(additionalHeaders)
+    }
 
     private static var cookieHeaderField: String { "Cookie" }
 

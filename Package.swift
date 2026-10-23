@@ -60,6 +60,8 @@ let package = Package(
                     path: "Tests/RevenueCatConcurrencyTests"),
         .testTarget(name: "RevenueCatNetworkingTests",
                     dependencies: ["RevenueCat"],
-                    path: "Tests/RevenueCatNetworkingTests")
+                    path: "Tests/RevenueCatNetworkingTests"),
+        .testTarget(name: "RevenueCatProxyAuthenticationTests", dependencies: ["RevenueCat"],
+                    path: "Tests/ProxyAuthentication")
     ]
 )
