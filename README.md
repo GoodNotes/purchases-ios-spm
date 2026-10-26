@@ -77,3 +77,28 @@ existing behavior. Do not put a rotating access token into `withAPIKey`.
 The signed-message format remains RevenueCat's format with the request bearer
 in place of the static API key. Local cryptographic tests cover token rotation
 and tampering; live ISI interoperability must also be verified by the integrator.
+
+
+### Resolving serialized package selections
+
+ISI may return the same package identifier for multiple StoreKit products or plans
+within an offering. Hybrid bridges should serialize the full selection and let
+the SDK resolve it, rather than build a dictionary keyed by package identifier:
+
+```swift
+let offerings = try await Purchases.shared.offerings()
+guard let package = offerings.package(
+    offeringIdentifier: offeringID,
+    packageIdentifier: packageID,
+    productIdentifier: productID,
+    planKey: planKey
+) else {
+    // Ask the caller to reload: the selection is missing or ambiguous.
+    return
+}
+let result = try await Purchases.shared.purchase(package: package)
+```
+
+The lookup requires exactly one match, preserves current-offering targeting
+attribution, and treats a nil plan key as an exact match, not a wildcard. Existing
+`Offering.package(identifier:)` behavior remains unchanged for existing clients.

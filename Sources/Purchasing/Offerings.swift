@@ -94,6 +94,26 @@ public enum OfferingsSource: Int {
 
 public extension Offerings {
 
+    /// Resolves a serialized purchase selection without assuming package identifiers are unique.
+    /// ISI may reuse an identifier for different products or plans within the same offering.
+    /// Returns the SDK package with its offering attribution, or nil for missing/ambiguous selections.
+    /// A nil plan key matches only packages without a plan key; it is not a wildcard.
+    @objc func package(
+        offeringIdentifier: String,
+        packageIdentifier: String,
+        productIdentifier: String,
+        planKey: String?
+    ) -> Package? {
+        let current = self.current
+        let offering = current?.identifier == offeringIdentifier ? current : self.all[offeringIdentifier]
+        let matches = offering?.availablePackages.filter {
+            $0.identifier == packageIdentifier &&
+                $0.storeProduct.productIdentifier == productIdentifier &&
+                $0.planKey == planKey
+        } ?? []
+        return matches.count == 1 ? matches.first : nil
+    }
+
     /**
      Retrieves a specific offering by its identifier, use this to access additional offerings configured in the
      RevenueCat dashboard, e.g. `offerings.offering(identifier: "offering_id")` or `offerings[@"offering_id"]`.
