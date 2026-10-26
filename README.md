@@ -51,3 +51,29 @@ swift build -c release --target RevenueCat
 
 The upstream history is retained for traceability. Removing files from the current tree reduces checkout size and
 shallow-clone downloads, but does not reduce the object database of a full clone that includes the complete history.
+
+## Goodnotes keyless authenticated proxy
+
+NGN uses Good Systems access tokens without a RevenueCat public API key:
+
+```swift
+Purchases.proxyURL = isiOrigin
+let configuration = Configuration.builder(withProxyAuthenticationHeadersProvider: {
+    ["Authorization": "Bearer \(try await session.freshAccessToken())"]
+})
+.with(appUserID: goodSystemsSubject)
+.build()
+Purchases.configure(with: configuration)
+```
+
+The provider runs for each request and must throw when the session is unavailable.
+A missing proxy or bearer fails before network I/O. This mode excludes Classic
+cookies, `x-gn-account-id` and `X-ISI-API-KEY`, and never falls back to a static
+credential. Response verification uses the bearer captured in the sent request,
+not the current session token. Token-bearing diagnostic data is redacted.
+The existing API-key builder, including Classic's cookie provider, keeps its
+existing behavior. Do not put a rotating access token into `withAPIKey`.
+
+The signed-message format remains RevenueCat's format with the request bearer
+in place of the static API key. Local cryptographic tests cover token rotation
+and tampering; live ISI interoperability must also be verified by the integrator.

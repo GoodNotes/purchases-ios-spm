@@ -57,7 +57,9 @@ import Foundation
     internal let diagnosticsEnabled: Bool
 
     private init(with builder: Builder) {
-        Self.verify(apiKey: builder.apiKey)
+        if !builder.apiKey.isEmpty || builder.proxyAuthenticationHeadersProvider == nil {
+            Self.verify(apiKey: builder.apiKey)
+        }
 
         self.apiKey = builder.apiKey
         self.appUserID = builder.appUserID
@@ -77,6 +79,15 @@ import Foundation
     /// Factory method for the ``Configuration/Builder`` object that is required to create a `Configuration`
     @objc public static func builder(withAPIKey apiKey: String) -> Builder {
         return Builder(withAPIKey: apiKey)
+    }
+
+    /// Configure a proxy that authenticates exclusively with a fresh bearer token.
+    /// Set `Purchases.proxyURL` before configuring. No RevenueCat public API key is needed.
+    /// The provider must return Authorization on every request; errors stop the request.
+    public static func builder(
+        withProxyAuthenticationHeadersProvider provider: @escaping ProxyAuthenticationHeadersProvider
+    ) -> Builder {
+        return Builder(withAPIKey: "").with(proxyAuthenticationHeadersProvider: provider)
     }
 
     /// The Builder for ```Configuration```.
