@@ -125,3 +125,22 @@ let result = try await Purchases.shared.purchase(package: package)
 The lookup requires exactly one match, preserves current-offering targeting
 attribution, and treats a nil plan key as an exact match, not a wildcard. Existing
 `Offering.package(identifier:)` behavior remains unchanged for existing clients.
+
+## Isolating caches in a shared application container
+
+Classic and NGN share an iOS sandbox when hosted by the GoodNotes container. A process restart clears in-memory caches, but does not isolate persisted offerings, customer information, HTTP responses/ETags or cached ISI JWTs. Opt in when configuring NGN:
+
+```swift
+let configuration = Configuration.builder(withProxyAuthenticationHeadersProvider: {
+    ["Authorization": "Bearer \(try await session.freshAccessToken())"]
+})
+.with(appUserID: goodSystemsSubject)
+.with(cacheNamespace: "new_goodnotes", environment: isiOrigin.absoluteString)
+.build()
+```
+
+Use a stable application identifier and a stable environment identifier, such as the configured ISI origin. Never use access tokens or user IDs as the namespace. The SDK derives separate persistent domains from the bundle identifier, application namespace and environment. All three stores use this scope, including when clearing HTTP caches or JWTs. User-specific data remains keyed by user ID within the scope.
+
+The first scoped launch starts with empty caches; no unscoped data is copied because it cannot be reliably attributed to an application/environment. Returning to the same scope can reuse its own cached data, including offline offerings. Existing configurations that omit the namespace retain their original storage, including Classic's default domains and custom device UserDefaults. Do not combine a namespace with `with(userDefaults:)`; the builder rejects that combination to avoid partial isolation.
+
+Continue restarting the process when switching applications or ISI environments. This API partitions persistent SDK caches; it does not support concurrently configured Purchases singletons, isolate cookies managed outside the SDK, or manage paywall UI-config/assets caches owned by the application.

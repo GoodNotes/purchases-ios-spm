@@ -46,6 +46,7 @@ import Foundation
     let appUserID: String?
     let observerMode: Bool
     let userDefaults: UserDefaults?
+    let cacheNamespace: CacheNamespace?
     let storeKitVersion: StoreKitVersion
     let dangerousSettings: DangerousSettings?
     let networkTimeout: TimeInterval
@@ -61,10 +62,14 @@ import Foundation
             Self.verify(apiKey: builder.apiKey)
         }
 
+        precondition(builder.cacheNamespace == nil || builder.userDefaults == nil,
+                     "A cache namespace cannot be combined with custom UserDefaults.")
+
         self.apiKey = builder.apiKey
         self.appUserID = builder.appUserID
         self.observerMode = builder.observerMode
         self.userDefaults = builder.userDefaults
+        self.cacheNamespace = builder.cacheNamespace
         self.storeKitVersion = builder.storeKitVersion
         self.dangerousSettings = builder.dangerousSettings
         self.storeKit1Timeout = builder.storeKit1Timeout
@@ -107,6 +112,7 @@ import Foundation
         }
         private(set) var purchasesAreCompletedBy: PurchasesAreCompletedBy = .revenueCat
         private(set) var userDefaults: UserDefaults?
+        private(set) var cacheNamespace: CacheNamespace?
         private(set) var dangerousSettings: DangerousSettings?
         private(set) var networkTimeout = Configuration.networkTimeoutDefault
         private(set) var storeKit1Timeout = Configuration.storeKitRequestTimeoutDefault
@@ -180,6 +186,15 @@ import Foundation
          */
         @objc public func with(userDefaults: UserDefaults) -> Builder {
             self.userDefaults = userDefaults
+            return self
+        }
+
+        /// Isolate persistent SDK data, HTTP response caches and cached proxy JWTs by application and environment.
+        /// Use stable, nonempty identifiers (for example, "new_goodnotes" and the ISI origin URL), never user tokens.
+        /// Scoped caches start empty and never import unscoped data. Omitting this keeps the existing storage behavior.
+        /// Do not combine with `with(userDefaults:)`. Configure only one application/environment per process.
+        @objc public func with(cacheNamespace: String, environment: String) -> Builder {
+            self.cacheNamespace = CacheNamespace(application: cacheNamespace, environment: environment)
             return self
         }
 

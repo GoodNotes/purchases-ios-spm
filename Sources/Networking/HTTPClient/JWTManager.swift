@@ -9,15 +9,20 @@ import Foundation
 
 class JWTManager {
     private let userDefaults: SynchronizedUserDefaults
+    let persistentDomainName: String
 
-    convenience init() {
+    convenience init(cacheNamespace: CacheNamespace? = nil) {
+        let suiteName = cacheNamespace?.suiteName(for: .jwt) ?? Self.suiteName
         self.init(
-            userDefaults: UserDefaults(suiteName: Self.suiteName) ?? UserDefaults.standard
+            userDefaults: cacheNamespace?.userDefaults(for: .jwt)
+                ?? UserDefaults(suiteName: Self.suiteName) ?? UserDefaults.standard,
+            suiteName: suiteName
         )
     }
 
-    init(userDefaults: UserDefaults) {
+    init(userDefaults: UserDefaults, suiteName: String) {
         self.userDefaults = .init(userDefaults: userDefaults)
+        self.persistentDomainName = suiteName
     }
 
     func store(from urlResponse: URLResponse) {
@@ -64,7 +69,7 @@ class JWTManager {
         Logger.debug(Strings.jwt.clearing_cache)
 
         userDefaults.write {
-            $0.removePersistentDomain(forName: Self.suiteName)
+            $0.removePersistentDomain(forName: self.persistentDomainName)
         }
     }
 
@@ -113,7 +118,7 @@ extension String {
 
 extension JWTManager {
     fileprivate static let suiteNameBase: String = "revenuecat.jwt"
-    fileprivate static var suiteName: String {
+    static var suiteName: String {
         guard let bundleID = Bundle.main.bundleIdentifier else {
             return suiteNameBase
         }

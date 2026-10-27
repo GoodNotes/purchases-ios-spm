@@ -270,6 +270,7 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
     convenience init(apiKey: String,
                      appUserID: String?,
                      userDefaults: UserDefaults? = nil,
+                     cacheNamespace: CacheNamespace? = nil,
                      applicationSupportDirectory: URL? = nil,
                      observerMode: Bool = false,
                      platformInfo: PlatformInfo? = Purchases.platformInfo,
@@ -298,11 +299,11 @@ public typealias StartPurchaseBlock = (@escaping PurchaseCompletedBlock) -> Void
                                     dangerousSettings: dangerousSettings)
 
         let receiptFetcher = ReceiptFetcher(requestFetcher: fetcher, systemInfo: systemInfo)
-        let eTagManager = ETagManager()
-        let jwtManager = JWTManager()
+        let eTagManager = ETagManager(cacheNamespace: cacheNamespace)
+        let jwtManager = JWTManager(cacheNamespace: cacheNamespace)
         let attributionTypeFactory = AttributionTypeFactory()
         let attributionFetcher = AttributionFetcher(attributionFactory: attributionTypeFactory, systemInfo: systemInfo)
-        let userDefaults = userDefaults ?? UserDefaults.computeDefault()
+        let userDefaults = CacheNamespace.deviceUserDefaults(namespace: cacheNamespace, custom: userDefaults)
         let deviceCache = DeviceCache(sandboxEnvironmentDetector: systemInfo, userDefaults: userDefaults)
 
         let purchasedProductsFetcher = OfflineCustomerInfoCreator.createPurchasedProductsFetcherIfAvailable()
@@ -1322,6 +1323,7 @@ public extension Purchases {
                   appUserID: configuration.appUserID,
                   observerMode: configuration.observerMode,
                   userDefaults: configuration.userDefaults,
+                  cacheNamespace: configuration.cacheNamespace,
                   platformInfo: configuration.platformInfo,
                   responseVerificationMode: configuration.responseVerificationMode,
                   storeKitVersion: configuration.storeKitVersion,
@@ -1538,6 +1540,7 @@ public extension Purchases {
         appUserID: String?,
         observerMode: Bool,
         userDefaults: UserDefaults?,
+        cacheNamespace: CacheNamespace? = nil,
         applicationSupportDirectory: URL? = nil,
         platformInfo: PlatformInfo?,
         responseVerificationMode: Signing.ResponseVerificationMode,
@@ -1553,6 +1556,7 @@ public extension Purchases {
             .init(apiKey: apiKey,
                   appUserID: appUserID,
                   userDefaults: userDefaults,
+                  cacheNamespace: cacheNamespace,
                   applicationSupportDirectory: applicationSupportDirectory,
                   observerMode: observerMode,
                   platformInfo: platformInfo,
