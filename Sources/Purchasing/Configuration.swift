@@ -231,8 +231,10 @@ import Foundation
         /// The provider is evaluated for each request so short-lived account tokens can be refreshed by the app.
         /// Returned `Cookie` values are appended to existing cookies. An explicit `Authorization` replaces the
         /// SDK API-key authorization only for proxy requests, allowing Good Systems OIDC authentication.
-        /// Other existing SDK headers cannot be replaced. The proxy must define how its public API key is
-        /// transported when Authorization is used for a user token; provide that header separately.
+        /// A nonempty API key remains the response-signature credential even when Authorization is replaced.
+        /// Other existing SDK headers cannot be replaced. The proxy must sign responses with the same API key;
+        /// send a separate key header only if the proxy's contract requires one. Keyless configurations instead
+        /// verify with the bearer captured in the request.
         /// Never return a user token for a proxy origin that is not trusted by the application.
         public func with(
             proxyAuthenticationHeadersProvider: @escaping ProxyAuthenticationHeadersProvider

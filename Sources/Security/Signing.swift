@@ -287,6 +287,9 @@ extension Signing.SignatureParameters {
     }
 
     func signature(salt: Data, apiKey: String) -> Data {
+        // A keyed configuration always verifies with its static API key, even if
+        // the proxy provider replaces Authorization with a user bearer token.
+        // Only the explicit keyless mode uses the bearer captured on the request.
         let credential = apiKey.isEmpty ? (self.requestHeaders.proxyBearerToken ?? "") : apiKey
         let apiKey = self.path.authenticated ? credential : ""
         return salt + apiKey.asData + self.asData
