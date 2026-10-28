@@ -1,0 +1,456 @@
+{
+  "current_offering_id": "new-goodnotes-launch",
+  "offerings": [
+    {
+      "description": "Offerings to subscribe to GN6",
+      "identifier": "subscriptions",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_7dt_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3999",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Offerings to subscribe to GN6",
+      "identifier": "sept-launch-subscriptions",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_7dt_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3999",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users purchases gn5 after 20230701 will get 1y free",
+      "identifier": "gn5-20230701-1y-free",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1yf_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_2999",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users purchases gn5 after 20230701 will get 1y free",
+      "identifier": "sept-launch-gn5-20230701-1y-free",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1yf_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_2999",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users unlock GN5 in 2023 get 1st year 50% off",
+      "identifier": "gn5-2023-1y-50off",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1y50off_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3499",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users unlock GN5 in 2023 get 1st year 50% off",
+      "identifier": "sept-launch-gn5-2023-1y-50off",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1y50off_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3499",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users who purchased Goodnotes5 get 25% off for the first year",
+      "identifier": "gn5-1y-25off",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1y25off_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3749",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users who purchased Goodnotes5 get 25% off for the first year",
+      "identifier": "sept-launch-gn5-1y-25off",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1y25off_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3749",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users unlock GN5 in 2023 get 1st year 50% off with trial",
+      "identifier": "gn5-2023-1y-50off-with-trial",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "trial-7d",
+          "platform_product_identifier": "com.goodnotes.premium_7dt",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1y50off_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3499",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users unlock GN5 in 2023 get 1st year 50% off with trial",
+      "identifier": "sept-launch-gn5-2023-1y-50off-with-trial",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "trial-7d",
+          "platform_product_identifier": "com.goodnotes.premium_7dt",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1y50off_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3499",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users who purchased Goodnotes5 get 25% off for the first year with trial",
+      "identifier": "gn5-1y-25off-with-trial",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "trial-7d",
+          "platform_product_identifier": "com.goodnotes.premium_7dt",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1y25off_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3749",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Users who purchased Goodnotes5 get 25% off for the first year with trial",
+      "identifier": "sept-launch-gn5-1y-25off-with-trial",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "trial-7d",
+          "platform_product_identifier": "com.goodnotes.premium_7dt",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_1y25off_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3749",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "Offerings to subscribe Goodnotes + AI",
+      "identifier": "ai-premium-202504",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "ai_premium_202504",
+          "platform_product_identifier": "com.goodnotes.plus.ai.premium_7dt_1y_2999"
+        }
+      ]
+    },
+    {
+      "description": "Upgrade from Premium to Pro",
+      "identifier": "goodnotes-upgrade-premium-to-pro-offering",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        }
+      ]
+    },
+    {
+      "description": "AI Pass Only",
+      "identifier": "ai-pass-only",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnote_ai_pass",
+          "platform_product_identifier": "com.goodnotes.ai_pass_7dt_1mo_999",
+          "plan_key": "ai_pass"
+        }
+      ]
+    },
+    {
+      "description": "Essential & Pro Only",
+      "identifier": "essential-pro-only",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_7dt_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        }
+      ]
+    },
+    {
+      "description": "For user upgrades from GN6 One Time Unlock to Goodnotes Pro subscription",
+      "identifier": "pro-only",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        }
+      ]
+    },
+    {
+      "description": "AI Pass Only without trial",
+      "identifier": "ai-pass-only-no-trial",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnote_ai_pass_no_trial",
+          "platform_product_identifier": "com.goodnotes.ai_pass_7dt_1mo_999_alt",
+          "plan_key": "ai_pass"
+        }
+      ]
+    },
+    {
+      "description": "Offerings to subscribe to GN6 (with monthly subscriptions)",
+      "identifier": "subscriptions-with-monthly",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_7dt_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "$rc_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3999",
+          "plan_key": "gn6_otp"
+        },
+        {
+          "identifier": "subscriptions_monthly",
+          "platform_product_identifier": "com.goodnotes.pro_1mo",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "subscriptions_monthly",
+          "platform_product_identifier": "com.goodnotes.essential_1mo",
+          "plan_key": "premium"
+        }
+      ]
+    },
+    {
+      "description": "For user upgrades to Goodnotes Pro subscription",
+      "identifier": "pro-only-with-monthly",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "goodnotes_pro_monthly",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "goodnotes_pro_monthly",
+          "platform_product_identifier": "com.goodnotes.pro_1mo",
+          "plan_key": "pro"
+        }
+      ]
+    },
+    {
+      "description": "Goodnotes Lite Launch Offering",
+      "identifier": "goodnotes-lite-launch",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_lite_launch_package",
+          "platform_product_identifier": "com.goodnotesapp.cn.yearly",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "goodnotes_lite_launch_package",
+          "platform_product_identifier": "com.goodnotesapp.cn.semiyearly",
+          "plan_key": "pro"
+        }
+      ]
+    },
+    {
+      "description": "stripe on ios",
+      "identifier": "stripe-ios",
+      "metadata": null,
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_7dt_1y_999",
+          "plan_key": "premium"
+        },
+        {
+          "identifier": "stripe_lifetime",
+          "platform_product_identifier": "com.goodnotes.gn6_one_time_unlock_3999",
+          "plan_key": "gn6_otp"
+        }
+      ]
+    },
+    {
+      "description": "New Goodnotes Launch Offering",
+      "identifier": "new-goodnotes-launch",
+      "metadata": {
+        "experiment_groups": ""
+      },
+      "packages": [
+        {
+          "identifier": "goodnotes_pro",
+          "platform_product_identifier": "com.goodnotes.pro_7dt_1y_3599",
+          "plan_key": "pro"
+        },
+        {
+          "identifier": "$rc_annual",
+          "platform_product_identifier": "com.goodnotes.premium_7dt_1y_999",
+          "plan_key": "premium"
+        }
+      ]
+    }
+  ],
+  "placements": {
+    "fallback_offering_id": "new-goodnotes-launch",
+    "offering_ids_by_placement": {
+      "regular_paywall": "new-goodnotes-launch",
+      "pro_only": "new-goodnotes-launch",
+      "ai_pass_only": "new-goodnotes-launch",
+      "show_personal_and_pro": "new-goodnotes-launch"
+    }
+  }
+}

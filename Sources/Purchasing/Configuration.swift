@@ -57,7 +57,9 @@ import Foundation
     internal let diagnosticsEnabled: Bool
 
     private init(with builder: Builder) {
-        Self.verify(apiKey: builder.apiKey)
+        if !builder.apiKey.isEmpty || builder.proxyAuthenticationHeadersProvider == nil {
+            Self.verify(apiKey: builder.apiKey)
+        }
 
         self.apiKey = builder.apiKey
         self.appUserID = builder.appUserID
@@ -77,6 +79,15 @@ import Foundation
     /// Factory method for the ``Configuration/Builder`` object that is required to create a `Configuration`
     @objc public static func builder(withAPIKey apiKey: String) -> Builder {
         return Builder(withAPIKey: apiKey)
+    }
+
+    /// Configure a proxy that authenticates exclusively with a fresh bearer token.
+    /// Set `Purchases.proxyURL` before configuring. No RevenueCat public API key is needed.
+    /// The provider must return Authorization on every request; errors stop the request.
+    public static func builder(
+        withProxyAuthenticationHeadersProvider provider: @escaping ProxyAuthenticationHeadersProvider
+    ) -> Builder {
+        return Builder(withAPIKey: "").with(proxyAuthenticationHeadersProvider: provider)
     }
 
     /// The Builder for ```Configuration```.
@@ -218,8 +229,13 @@ import Foundation
 
         /// Set additional authentication headers for requests routed through ``Purchases/proxyURL``.
         /// The provider is evaluated for each request so short-lived account tokens can be refreshed by the app.
-        /// Returned `Cookie` values are appended to existing cookies. Other headers are added only when the SDK has
-        /// not already set the same header, so `Authorization` cannot override the RevenueCat API-key authorization.
+        /// Returned `Cookie` values are appended to existing cookies. An explicit `Authorization` replaces the
+        /// SDK API-key authorization only for proxy requests, allowing Good Systems OIDC authentication.
+        /// A nonempty API key remains the response-signature credential even when Authorization is replaced.
+        /// Other existing SDK headers cannot be replaced. The proxy must sign responses with the same API key;
+        /// send a separate key header only if the proxy's contract requires one. Keyless configurations instead
+        /// verify with the bearer captured in the request.
+        /// Never return a user token for a proxy origin that is not trusted by the application.
         public func with(
             proxyAuthenticationHeadersProvider: @escaping ProxyAuthenticationHeadersProvider
         ) -> Builder {

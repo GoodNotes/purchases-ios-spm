@@ -88,6 +88,9 @@ final class Signing: SigningType {
         with parameters: SignatureParameters,
         publicKey: Signing.PublicKey
     ) -> VerificationReason? {
+        if self.apiKey.isEmpty, parameters.path.authenticated, parameters.requestHeaders.proxyBearerToken == nil {
+            return .signatureFailedVerification("Missing proxy bearer credential for response verification.")
+        }
         guard let signature = Data(base64Encoded: signature) else {
             Logger.warn(Strings.signing.signature_not_base64(signature))
             return .signatureNotBase64(signature)
@@ -116,7 +119,7 @@ final class Signing: SigningType {
             parameters: parameters,
             salt: salt,
             payload: payload,
-            message: messageToVerify
+            message: self.apiKey.isEmpty ? nil : messageToVerify
         ))
         #endif
 
@@ -133,7 +136,7 @@ final class Signing: SigningType {
                     parameters: parameters,
                     salt: salt,
                     payload: payload,
-                    message: messageToVerify
+                    message: self.apiKey.isEmpty ? nil : messageToVerify
                 ).description
             )
         }
@@ -284,7 +287,11 @@ extension Signing.SignatureParameters {
     }
 
     func signature(salt: Data, apiKey: String) -> Data {
-        let apiKey = self.path.authenticated ? apiKey : ""
+        // A keyed configuration always verifies with its static API key, even if
+        // the proxy provider replaces Authorization with a user bearer token.
+        // Only the explicit keyless mode uses the bearer captured on the request.
+        let credential = apiKey.isEmpty ? (self.requestHeaders.proxyBearerToken ?? "") : apiKey
+        let apiKey = self.path.authenticated ? credential : ""
         return salt + apiKey.asData + self.asData
     }
 
@@ -325,7 +332,7 @@ extension Signing.SignatureParameters: CustomDebugStringConvertible {
                 headers: self.requestHeaders,
                 path: self.path
             ) ?? "")'
-            headers: '\(self.requestHeaders)'
+            headers: '\(self.requestHeaders.redactingAuthentication)'
             postParameterHeader: '\(self.requestBody?.postParameterHeader ?? "")'
             nonce: '\(self.nonce?.base64EncodedString() ?? "")'
             etag: '\(self.etag ?? "")'

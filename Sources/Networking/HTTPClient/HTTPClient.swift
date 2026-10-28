@@ -168,7 +168,7 @@ class HTTPClient {
 extension HTTPClient {
 
     static func authorizationHeader(withAPIKey apiKey: String) -> RequestHeaders {
-        return [RequestHeader.authorization.rawValue: "Bearer \(apiKey)"]
+        return apiKey.isEmpty ? [:] : [RequestHeader.authorization.rawValue: "Bearer \(apiKey)"]
     }
 
     static func nonceHeader(with data: Data) -> RequestHeaders {
@@ -381,10 +381,10 @@ private extension HTTPClient {
             ))
             requestHeaders = [:]
         } else {
-            requestHeaders = request.headers
+            requestHeaders = self.apiKey.isEmpty ? (urlRequest.allHTTPHeaderFields ?? [:]) : request.headers
         }
         #else
-        let requestHeaders = request.headers
+        let requestHeaders = self.apiKey.isEmpty ? (urlRequest.allHTTPHeaderFields ?? [:]) : request.headers
         #endif
 
         let result = Result
@@ -489,7 +489,7 @@ private extension HTTPClient {
 
             if !requestRetryScheduled {
                 if let urlResponse = urlResponse {
-                    jwtManager.store(from: urlResponse)
+                    if !self.apiKey.isEmpty { jwtManager.store(from: urlResponse) }
                 }
                 request.completionHandler?(response)
             }
@@ -565,6 +565,7 @@ private extension HTTPClient {
         }
         var urlRequest = URLRequest(url: requestURL)
         urlRequest.httpMethod = request.method.httpMethod
+        if self.apiKey.isEmpty { urlRequest.httpShouldHandleCookies = false }
         urlRequest.allHTTPHeaderFields = try await self.headers(
             for: request,
             urlRequest: urlRequest,
@@ -588,11 +589,23 @@ private extension HTTPClient {
     ) async throws -> HTTPClient.RequestHeaders {
         var headers = request.headers
 
+        var proxyHeaders: RequestHeaders = [:]
         if isProxyRequest, let proxyAuthenticationHeadersProvider {
-            headers.mergeAdditionalHTTPHeaders(try await proxyAuthenticationHeadersProvider())
+            proxyHeaders = try await proxyAuthenticationHeadersProvider()
         }
-        headers.mergeAdditionalHTTPHeaders(jwtManager.jwtHeader())
+        if self.apiKey.isEmpty {
+            proxyHeaders = try Self.keylessProxyHeaders(proxyHeaders, isProxyRequest: isProxyRequest)
+        }
+        headers.mergeProxyAuthenticationHeaders(proxyHeaders)
+        if !self.apiKey.isEmpty {
+            headers.mergeAdditionalHTTPHeaders(jwtManager.jwtHeader())
+        }
         headers.applyRequestScopedHTTPHeaders(request.httpRequest.additionalHeaders)
+        if self.apiKey.isEmpty {
+            // Request-specific metadata cannot override the freshly supplied identity.
+            headers.mergeProxyAuthenticationHeaders(proxyHeaders)
+            headers = try Self.keylessProxyHeaders(headers, isProxyRequest: isProxyRequest)
+        }
 
         if request.httpRequest.path.shouldSendEtag {
             // Use the same platform headers for cache lookup and response storage.
@@ -663,7 +676,50 @@ private extension HTTPClient {
     }
 }
 
+extension HTTPClient {
+    /// Fail closed instead of falling back to RevenueCat or a cached Classic credential.
+    static func keylessProxyHeaders(_ headers: RequestHeaders, isProxyRequest: Bool) throws -> RequestHeaders {
+        guard isProxyRequest, headers.proxyBearerToken != nil else {
+            throw KeylessProxyAuthenticationError()
+        }
+        return headers.filter { !["cookie", "x-gn-account-id", "x-isi-api-key"].contains($0.key.lowercased()) }
+    }
+
+    private struct KeylessProxyAuthenticationError: LocalizedError {
+        var errorDescription: String? { "A configured proxy and a fresh bearer token are required." }
+    }
+
+}
+
 extension Dictionary where Key == String, Value == String {
+
+    /// Read the credential from the request snapshot, never from mutable session state.
+    var proxyBearerToken: String? {
+        guard let value = first(where: { $0.key.lowercased() == "authorization" })?.value else { return nil }
+        let parts = value.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+        guard parts.count == 2, parts[0].lowercased() == "bearer",
+              !parts[1].isEmpty, !parts[1].contains(where: { $0.isWhitespace }) else { return nil }
+        return String(parts[1])
+    }
+
+    var redactingAuthentication: [String: String] {
+        Dictionary(uniqueKeysWithValues: map { key, value in
+            (key, ["authorization", "cookie", "x-isi-api-key", "x-gn-account-id"].contains(key.lowercased())
+                ? "<redacted>" : value)
+        })
+    }
+
+    /// Only the explicitly configured proxy authentication provider may replace
+    /// Authorization. SDK integrity, platform and nonce headers stay protected.
+    mutating func mergeProxyAuthenticationHeaders(_ additionalHeaders: [String: String]) {
+        for (header, value) in additionalHeaders where !value.isEmpty {
+            if header.caseInsensitiveCompare("Authorization") == .orderedSame {
+                if let existingKey = key(matchingHeader: header) { removeValue(forKey: existingKey) }
+                self["Authorization"] = value
+            }
+        }
+        mergeAdditionalHTTPHeaders(additionalHeaders)
+    }
 
     private static var cookieHeaderField: String { "Cookie" }
 
