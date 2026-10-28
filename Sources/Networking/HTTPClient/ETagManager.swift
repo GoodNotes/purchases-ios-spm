@@ -21,18 +21,20 @@ class ETagManager {
     static let eTagResponseHeader = HTTPClient.ResponseHeader.eTag
 
     private let userDefaults: SynchronizedUserDefaults
+    let persistentDomainName: String
 
-    convenience init() {
+    convenience init(cacheNamespace: CacheNamespace? = nil) {
+        let suiteName = cacheNamespace?.suiteName(for: .etags) ?? Self.suiteName
         self.init(
-            userDefaults: UserDefaults(suiteName: Self.suiteName)
-            // This should never return `nil` for this known `suiteName`,
-            // but `.standard` is a good fallback anyway.
-            ?? UserDefaults.standard
+            userDefaults: cacheNamespace?.userDefaults(for: .etags)
+                ?? UserDefaults(suiteName: Self.suiteName) ?? UserDefaults.standard,
+            suiteName: suiteName
         )
     }
 
-    init(userDefaults: UserDefaults) {
+    init(userDefaults: UserDefaults, suiteName: String) {
         self.userDefaults = .init(userDefaults: userDefaults)
+        self.persistentDomainName = suiteName
     }
 
     /// - Parameter withSignatureVerification: whether requests require a signature.
@@ -121,7 +123,7 @@ class ETagManager {
         Logger.debug(Strings.etag.clearing_cache)
 
         self.userDefaults.write {
-            $0.removePersistentDomain(forName: ETagManager.suiteName)
+            $0.removePersistentDomain(forName: self.persistentDomainName)
         }
     }
 
@@ -200,6 +202,10 @@ private extension ETagManager {
             }
         }
     }
+
+}
+
+extension ETagManager {
 
     static let suiteNameBase: String  = "revenuecat.etags"
     static var suiteName: String {
